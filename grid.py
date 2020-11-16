@@ -51,6 +51,7 @@ class Voxel:
 
     def __init__(self, v):
         self.center = v
+        self.freq_dict = {}
 
     def set_frequencies(self, freq_dict):
         self.freq_dict = freq_dict
