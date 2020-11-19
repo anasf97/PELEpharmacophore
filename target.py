@@ -70,11 +70,22 @@ class Target():
                     freq_dict[atom] = 1
             self.grid.voxels[i].set_frequencies(freq_dict)
 
+    def set_frequency_filter(self, threshold):
+        freq_dict_all = {}
+        self.threshold_dict = {}
+        for voxel in self.grid.voxels:
+            for element, freq in voxel.freq_dict.items():
+                freq_dict_all.setdefault(element, []).append(freq)
+        for element, freqlist in freq_dict_all.items():
+            hist, bin_edges = np.histogram(freqlist)
+            self.threshold_dict[element] = bin_edges[threshold]
+
     def save_pharmacophores(self):
         for voxel in self.grid.voxels:
             for element, freq in voxel.freq_dict.items():
-                f = open(f"{element}pharmacophore.pdb", 'a')
-                f.write(format_line_pdb(voxel.center, element, freq))
+                if freq >= self.threshold_dict[element]:
+                    f = open(f"{element}pharmacophore.pdb", 'a')
+                    f.write(format_line_pdb(voxel.center, element, freq))
 
 def read_pdb(file):
     parser = PDBParser()
@@ -87,17 +98,17 @@ def neighbor_search(atom_list, center, distance):
     atoms_near = neighbor_search.search(center, distance, 'A')
     return atoms_near
 
-def format_line_pdb(coords, atomname, bfact, atomnum = "1", resname="UNK", chain="A", resnum="1", occ="1"):
+def format_line_pdb(coords, atomname, bfact, atomnum = "1", resname="UNK", chain="A", resnum="1", occ=1.00):
     x, y, z = coords
     atomstr = "ATOM"
     element = atomname[0]
-    line = f"{atomstr:5}{atomnum:>5} {atomname:4} {resname:3} {chain}{resnum:>4}    {x:>8.3f}{y:>8.3f}{z:>8.3f}{occ:>6.2f}{bfact:6.2f}{element:>12}\n"
+    line = f"{atomstr:5}{atomnum:>5} {atomname:4} {resname:3} {chain}{resnum:>4}    {x:>8.3f}{y:>8.3f}{z:>8.3f}{occ:6.2f}{bfact:6.2f}{element:>12}\n"
     return line
 
 if __name__ == "__main__":
     target = Target("0/trajectory_1*")
     target.set_ligand_chain("L")
-    target.set_grid((2.173, 15.561, 28.257), 5)
+    target.set_grid((2.173, 15.561, 28.257), 7)
     p = Pool(50)
     dicts = p.map(target.analyze_trajectory, target.filelist)
     p.close()
@@ -105,6 +116,7 @@ if __name__ == "__main__":
     for d in dicts:
         target.merge_voxel_dicts(d)
     target.get_frequencies()
+    target.set_frequency_filter(2)
     target.save_pharmacophores()
 
     # s = Snap("processed_1a9u.pdb")
