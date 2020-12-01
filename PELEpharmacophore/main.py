@@ -2,18 +2,7 @@ from argparse import ArgumentParser
 from multiprocessing import Pool
 import PELEpharmacophore.target as tr
 import PELEpharmacophore.yaml_parser as yp
-
-VALID_FLAGS = { "dir": "dir",
-                "chain":"chain",
-                "resname": "resname",
-                "resnum": "resnum",
-                "HBD": "HBD",
-                "HBA": "HBA",
-                "ARO": "ARO",
-                "ALI": "ALI",
-                "NEG": "NEG",
-                "POS": "POS",
-                "features":"features"}
+import PELEpharmacophore.valid_flags as vf
 
 def parse_args(args=[]):
     '''
@@ -24,13 +13,11 @@ def parse_args(args=[]):
     args = parser.parse_args(args) if args else parser.parse_args()
     return args.input_file
 
-def run_PELEpharmacophore(args):
-    target = tr.Target(args.dir)
-    target.set_ligand(args.chain, args.resname, args.resnum)
-    #features = {"HBD":args.HBD, "HBA":args.HBA, "ARO":args.ARO, "ALI":args.ALI, "NEG":args.NEG, "POS":args.POS}
-    features = args.features
+def run_PELEpharmacophore(dir, chain, resname, resnum, center, features):
+    target = tr.Target(dir)
+    target.set_ligand(chain, resname, resnum)
     target.set_features(features)
-    target.set_grid((2.173, 15.561, 28.257), 7)
+    target.set_grid(center)
     with Pool(1) as p: # add n_workers as arg
         dicts = p.map(target.analyze_trajectory, target.filelist)
         p.close()
@@ -42,15 +29,14 @@ def run_PELEpharmacophore(args):
     target.save_pharmacophores()
 
 def main(input_yaml):
-    yaml_obj = yp.YamlParser(input_yaml, VALID_FLAGS)
+    yaml_obj = yp.YamlParser(input_yaml, vf.VALID_FLAGS)
     #try:
     yaml_obj.read()
     #except AttributeError:
         #raise ce.WrongYamlFile(f"Input file: {input_yaml} does not look like a correct yml file")
-    pass
-    run_PELEpharmacophore(yaml_obj)
+    run_PELEpharmacophore(yaml_obj.dir, yaml_obj.chain, yaml_obj.resname, yaml_obj.resnum, yaml_obj.grid_center, yaml_obj.features)
 
 
 if __name__ == "__main__":
-    input_file = parse_args()
-    main(input_file)
+    args = parse_args()
+    main(args)

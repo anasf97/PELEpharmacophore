@@ -4,17 +4,6 @@ import os
 import yaml
 import warnings
 
-VALID_FLAGS = {
-                "dir": "dir",
-                "chain": "chain",
-                "resname": "resname",
-                "resnum": "resnum",
-                "HBD": "HBD",
-                "HBA": "HBA",
-                "ARO": "ARO",
-                "ALI": "ALI",
-                "NEG": "NEG",
-                "POS": "POS"}
 
 @dataclass
 class YamlParser(object):
@@ -64,13 +53,8 @@ class YamlParser(object):
         self.chain = data.get(valid_flags["chain"], "")
         self.resname = data.get(valid_flags["resname"], "")
         self.resnum = data.get(valid_flags["resnum"], "")
-        self.HBD = data.get(valid_flags["HBD"], None)
-        self.HBA = data.get(valid_flags["HBA"], None)
-        self.ARO = data.get(valid_flags["ARO"], None)
-        self.ALI = data.get(valid_flags["ALI"], None)
-        self.NEG = data.get(valid_flags["NEG"], None)
-        self.POS = data.get(valid_flags["POS"], None)
         self.features = data.get(valid_flags["features"], None)
+        self.grid_center = data.get(valid_flags["grid_center"], None)
         #self.verbose = data.get(valid_flags["verbose"], None)
 
 @dataclass
