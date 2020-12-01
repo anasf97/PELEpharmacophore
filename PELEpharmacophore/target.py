@@ -13,6 +13,9 @@ class Target():
         self.voxel_dict_all = {}
         self.chain = None
 
+    def set_target_chain(self, target_chain):
+        self.target_chain = target_chain
+
     def set_ligand(self, chain, name, residue):
         self.chain = chain
         self.name = name
@@ -25,9 +28,23 @@ class Target():
         self.grid = gr.Grid(center, radius)
         self.grid.generate_voxels()
 
+    def set_atom_ref(self, atom):
+        self.atom_ref = atom
+
     def get_structure(self, file):
         structure = hl.read_pdb(file)
         return structure
+
+    def get_side_chain_atoms_around_ligand(self, structure, dist=5):
+        atoms = []
+        for model in structure:
+            model_atoms = []
+            [model_atoms.append(a) for a in model[self.target_chain].get_atoms() if a != "CA"]
+            atom_ref = model[self.chain][(f"H_{self.name}", self.residue, " ")][self.atom_ref]
+            center = atom_ref.get_coord()
+            atoms_near = hl.neighbor_search(model_atoms, self.grid.center, dist)
+            [atoms.append(a) for a in atoms_near]
+        return atoms
 
     def get_grid_atoms(self, structure):
         dist = np.sqrt(3)*self.grid.radius #get dist from center to vertex
@@ -48,22 +65,24 @@ class Target():
         featured_grid_atoms = [fa for fa in featured_atoms if fa.atom in grid_atoms ]
         return featured_grid_atoms
 
-    def check_voxels(self, grid_atoms):
+    def check_voxels(self, atoms):
         voxel_centers = np.array([v.center for v in self.grid.voxels])
-        atom_coords = np.array([a.atom.get_coord() for a in grid_atoms ])
+        atom_coords = np.array([a.get_coord() for a in atoms ])
         dist = distance.cdist(atom_coords, voxel_centers, 'euclidean')
         min = dist.argmin(axis=1) #get index of closest voxel to each atom
         voxel_dict = {}
-        for i, atom in enumerate(grid_atoms):
-            feature = atom.get_feature()
+        for i, atom in enumerate(atoms):
+            #feature = atom.get_feature()
+            element = atom.get_name()[0]
             voxel = min[i]
-            voxel_dict.setdefault(voxel, []).append(feature)
+            voxel_dict.setdefault(voxel, []).append(element)
         return voxel_dict
 
     def analyze_trajectory(self, file):
         model = self.get_structure(file)
-        grid_atoms = self.get_grid_atoms(model)
-        voxel_dict = self.check_voxels(grid_atoms)
+        #grid_atoms = self.get_grid_atoms(model)
+        atoms_near = self.get_side_chain_atoms_around_ligand(model)
+        voxel_dict = self.check_voxels(atoms_near)
         return voxel_dict
 
     def merge_voxel_dicts(self, voxel_dict):
@@ -90,7 +109,7 @@ class Target():
             hist, bin_edges = np.histogram(freqlist)
             self.threshold_dict[element] = bin_edges[threshold]
 
-    def save_pharmacophores(self, outdir="Pharmacophores"):
+    def save_pharmacophores(self, outdir="PharmacophoresTarget"):
         if not os.path.isdir(outdir):
             os.mkdir(outdir)
         for feature in self.threshold_dict:
@@ -116,10 +135,12 @@ class FeaturedAtom:
 
 
 if __name__ == "__main__":
-    target = Target("0/trajectory_1*")
+    target = Target("/home/ana/GitRepositories/PELEpharmacophore/PELEpharmacophore/0/trajectory_1*")
     target.set_ligand("L", "SB2", 800)
-    target.set_features(features)
-    target.set_grid((2.173, 15.561, 28.257), 7)
+    target.set_target_chain("A")
+    #target.set_features(features)
+    target.set_atom_ref("CC2")
+    target.set_grid((2.173, 15.561, 28.257), 10)
     p = Pool(50)
     dicts = p.map(target.analyze_trajectory, target.filelist)
     p.close()
@@ -127,8 +148,8 @@ if __name__ == "__main__":
     for d in dicts:
         target.merge_voxel_dicts(d)
     target.get_frequencies()
-    target.set_frequency_filter(2)
-    # target.save_pharmacophores()
+    target.set_frequency_filter(1)
+    target.save_pharmacophores()
 
     # s = Snap("processed_1a9u.pdb")
     # s.set_grid((2.173, 15.561, 28.257), 6)
