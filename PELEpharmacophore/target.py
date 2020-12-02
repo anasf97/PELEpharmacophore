@@ -38,6 +38,7 @@ class Target():
     def get_side_chain_atoms_around_ligand(self, structure, dist=4):
         atoms = []
         for model in structure:
+            model_atoms = []
             target_atoms = []
             [target_atoms.append(a) for a in model[self.target_chain].get_atoms() if a.get_name() not in ("CA","N","C")]
             ligand = model[self.chain][(f"H_{self.name}", self.residue, " ")]
@@ -45,8 +46,9 @@ class Target():
             #center = atom_ref.get_coord()
             for atom in ligand.get_atoms():
                 atoms_near = hl.neighbor_search(target_atoms, atom.get_coord(), dist)
-                [atoms.append(a) for a in atoms_near]
-        print(atoms)
+                [model_atoms.append(a) for a in atoms_near]
+            model_atoms = set(model_atoms)
+        [atoms.append(a) for a in model_atoms]
         return atoms
 
     def get_grid_atoms(self, structure):
