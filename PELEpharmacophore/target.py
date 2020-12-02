@@ -35,15 +35,18 @@ class Target():
         structure = hl.read_pdb(file)
         return structure
 
-    def get_side_chain_atoms_around_ligand(self, structure, dist=5):
+    def get_side_chain_atoms_around_ligand(self, structure, dist=4):
         atoms = []
         for model in structure:
-            model_atoms = []
-            [model_atoms.append(a) for a in model[self.target_chain].get_atoms() if a != "CA"]
-            atom_ref = model[self.chain][(f"H_{self.name}", self.residue, " ")][self.atom_ref]
-            center = atom_ref.get_coord()
-            atoms_near = hl.neighbor_search(model_atoms, self.grid.center, dist)
-            [atoms.append(a) for a in atoms_near]
+            target_atoms = []
+            [target_atoms.append(a) for a in model[self.target_chain].get_atoms() if a.get_name() not in ("CA","N","C")]
+            ligand = model[self.chain][(f"H_{self.name}", self.residue, " ")]
+            #atom_ref = model[self.chain][(f"H_{self.name}", self.residue, " ")][self.atom_ref]
+            #center = atom_ref.get_coord()
+            for atom in ligand.get_atoms():
+                atoms_near = hl.neighbor_search(target_atoms, atom.get_coord(), dist)
+                [atoms.append(a) for a in atoms_near]
+        print(atoms)
         return atoms
 
     def get_grid_atoms(self, structure):
@@ -139,7 +142,7 @@ if __name__ == "__main__":
     target.set_ligand("L", "SB2", 800)
     target.set_target_chain("A")
     #target.set_features(features)
-    target.set_atom_ref("CC2")
+    #target.set_atom_ref("CC2")
     target.set_grid((2.173, 15.561, 28.257), 10)
     p = Pool(50)
     dicts = p.map(target.analyze_trajectory, target.filelist)
