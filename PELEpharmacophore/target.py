@@ -40,7 +40,7 @@ class Target():
         for model in structure:
             model_atoms = []
             target_atoms = []
-            [target_atoms.append(a) for a in model[self.target_chain].get_atoms() if a.get_name() not in ("CA","N","C")]
+            [target_atoms.append(a) for a in model[self.target_chain].get_atoms() if a.get_name() not in ("CA","N","C","O")]
             ligand = model[self.chain][(f"H_{self.name}", self.residue, " ")]
             #atom_ref = model[self.chain][(f"H_{self.name}", self.residue, " ")][self.atom_ref]
             #center = atom_ref.get_coord()
@@ -140,7 +140,7 @@ class FeaturedAtom:
 
 
 if __name__ == "__main__":
-    target = Target("/home/ana/GitRepositories/PELEpharmacophore/PELEpharmacophore/0/trajectory_1*")
+    target = Target("SB2_Pele_3/output/0/")
     target.set_ligand("L", "SB2", 800)
     target.set_target_chain("A")
     #target.set_features(features)
