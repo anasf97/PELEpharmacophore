@@ -52,9 +52,13 @@ class Voxel:
     def __init__(self, v):
         self.center = v
         self.freq_dict = {}
+        self.models = []
 
     def set_frequencies(self, freq_dict):
         self.freq_dict = freq_dict
+
+    def add_origin(self, origin):
+        self.models.append(origin)
 
     def calculate_entropy(self):
         pass

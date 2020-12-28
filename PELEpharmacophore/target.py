@@ -1,4 +1,5 @@
 import os
+import re
 import numpy as np
 from scipy.spatial import distance
 import glob
@@ -56,8 +57,12 @@ class Target():
         voxel_dict = {}
         for i, atom in enumerate(grid_atoms):
             feature = atom.get_feature()
+            trajectory = hl.basename_without_extension(atom.atom.get_full_id()[0])
+            match = re.search("trajectory_(\d)*", trajectory)
+            trajectory = match.group(1)
+            model = atom.atom.get_full_id()[1]
             voxel = min[i]
-            voxel_dict.setdefault(voxel, []).append(feature)
+            voxel_dict.setdefault(voxel, []).append((feature, trajectory, model))
         return voxel_dict
 
     def analyze_trajectory(self, file):
@@ -73,11 +78,13 @@ class Target():
     def get_frequencies(self):
         for i, atomlist in self.voxel_dict_all.items():
             freq_dict = {}
-            for atom in atomlist:
-                if (atom in freq_dict):
-                    freq_dict[atom] += 1
+            for feature, trajectory, model in atomlist:
+                if (feature in freq_dict):
+                    freq_dict[feature] += 1
                 else:
-                    freq_dict[atom] = 1
+                    freq_dict[feature] = 1
+                origin = f"{trajectory}:{model}"
+                self.grid.voxels[i].add_origin(origin)
             self.grid.voxels[i].set_frequencies(freq_dict)
 
     def set_frequency_filter(self, threshold):
@@ -90,7 +97,7 @@ class Target():
             hist, bin_edges = np.histogram(freqlist)
             self.threshold_dict[element] = bin_edges[threshold]
 
-    def save_pharmacophores(self, outdir="Pharmacophores"):
+    def save_pharmacophores(self, outdir="Pharmacophores2"):
         if not os.path.isdir(outdir):
             os.mkdir(outdir)
         for feature in self.threshold_dict:
@@ -100,7 +107,7 @@ class Target():
             for feature, freq in voxel.freq_dict.items():
                 if freq >= self.threshold_dict[feature]:
                     with open(f"{outdir}/{feature}pharmacophore.pdb", 'a') as f:
-                        f.write(hl.format_line_pdb(voxel.center, feature, freq))
+                        f.write(hl.format_line_pdb(voxel.center, feature, freq, voxel.models))
 
 
 class FeaturedAtom:

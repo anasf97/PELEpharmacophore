@@ -3,7 +3,11 @@ from multiprocessing import Pool
 import PELEpharmacophore.target as tr
 import PELEpharmacophore.yaml_parser as yp
 import PELEpharmacophore.valid_flags as vf
+import PELEpharmacophore.frag_features as ff
 
+fragments = [
+
+]
 def parse_args(args=[]):
     '''
     Command line parser
@@ -27,6 +31,12 @@ def run_PELEpharmacophore(dir, chain, resname, resnum, center, features):
     target.get_frequencies()
     target.set_frequency_filter(2) # add filter as arg
     target.save_pharmacophores()
+
+def analyze_fragment_simulations(dir, center):
+    subdirs = os.listdir(dir)
+    for i, frag in enumerate(fragments):
+        run_PELEpharmacophore(subdir[i], "L", FR, 900, )
+    pass
 
 def main(input_yaml):
     yaml_obj = yp.YamlParser(input_yaml, vf.VALID_FLAGS)
