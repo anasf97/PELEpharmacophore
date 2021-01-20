@@ -2,7 +2,7 @@ import glob
 import numpy as np
 import os
 import re
-
+import PELEpharmacophore.helpers as hl
 
 class Grid:
 
@@ -51,17 +51,11 @@ class Voxel:
 
     def __init__(self, v):
         self.center = v
-        self.freq_dict = {}
-        self.models = []
+        self.freq_dict = None
+        self.origin_dict = None
 
-    def set_frequencies(self, freq_dict):
-        self.freq_dict = freq_dict
+    def count_feature(self, feature):
+        self.freq_dict = hl.frequency_dict(self.freq_dict, feature, 1)
 
-    def add_origin(self, origin):
-        self.models.append(origin)
-
-    def calculate_entropy(self):
-        pass
-
-    def calculate_enthalpy(self):
-        pass
+    def add_origin(self, feature, origin):
+        self.origin_dict = hl.list_dict(self.origin_dict, feature, origin)

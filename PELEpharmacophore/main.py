@@ -23,19 +23,19 @@ def run_PELEpharmacophore(dir, chain, resname, resnum, center, features):
     target.set_features(features)
     target.set_grid(center)
     with Pool(1) as p: # add n_workers as arg
-        dicts = p.map(target.analyze_trajectory, target.filelist)
+        grids = p.map(target.analyze_trajectory, target.filelist)
         p.close()
         p.join()
-    for d in dicts:
-        target.merge_voxel_dicts(d)
+    for g in dicts:
+        target.merge_grids(g)
     target.get_frequencies()
     target.set_frequency_filter(2) # add filter as arg
-    target.save_pharmacophores()
+    return target
 
 def analyze_fragment_simulations(dir, center):
     subdirs = os.listdir(dir)
     for i, frag in enumerate(fragments):
-        run_PELEpharmacophore(subdir[i], "L", FR, 900, )
+        target = run_PELEpharmacophore(subdir[i], "L", FR, 900, center, features)
     pass
 
 def main(input_yaml):
