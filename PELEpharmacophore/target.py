@@ -11,7 +11,7 @@ import PELEpharmacophore.helpers as hl
 class Target():
 
     def __init__(self, indir):
-        self.filelist = glob.glob(f"{indir}*pdb")
+        self.filelist = glob.glob(f"{indir}/output/0/*pdb")
         self.chain = None
 
     def set_ligand(self, chain, name, residue):
@@ -22,7 +22,7 @@ class Target():
     def set_features(self, features):
         self.features = features
 
-    def set_grid(self, center, radius=7):
+    def set_grid(self, center, radius):
         self.grid = gr.Grid(center, radius)
         self.grid.generate_voxels()
         self.empty_grid = True
