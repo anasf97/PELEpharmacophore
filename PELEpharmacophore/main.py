@@ -17,7 +17,7 @@ def parse_args(args=[]):
     args = parser.parse_args(args) if args else parser.parse_args()
     return args.input_file
 
-def PELEpharmacophore_ligand(dir, chain, resname, resnum, center, radius, features):
+def run_PELEpharmacophore(dir, chain, resname, resnum, center, radius, features):
     target = tr.Target(dir)
     target.set_ligand(chain, resname, resnum)
     target.set_features(features)
@@ -28,7 +28,12 @@ def PELEpharmacophore_ligand(dir, chain, resname, resnum, center, radius, featur
         p.join()
     for g in grids:
         target.merge_grids(g)
-    # target.set_frequency_filter(2) # add filter as arg
+    return target
+
+def PELEpharmacophore_ligand(dir, chain, resname, resnum, center, radius, features):
+    target = run_PELEpharmacophore
+    target.set_frequency_filter(2) # add filter as arg
+    target.save_pharmacophores()
     return target
 
 def PELEpharmacophore_fragments(dir, center, radius):
