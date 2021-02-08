@@ -5,9 +5,7 @@ import PELEpharmacophore.yaml_parser as yp
 import PELEpharmacophore.valid_flags as vf
 import PELEpharmacophore.frag_features as ff
 
-fragments = [
 
-]
 def parse_args(args=[]):
     '''
     Command line parser
@@ -31,7 +29,7 @@ def run_PELEpharmacophore(dir, chain, resname, resnum, center, radius, features)
     return target
 
 def PELEpharmacophore_ligand(dir, chain, resname, resnum, center, radius, features):
-    target = run_PELEpharmacophore
+    target = run_PELEpharmacophore(dir, chain, resname, resnum, center, radius, features)
     target.set_frequency_filter(2) # add filter as arg
     target.save_pharmacophores()
     return target
