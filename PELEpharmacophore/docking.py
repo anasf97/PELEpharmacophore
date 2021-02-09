@@ -17,9 +17,10 @@ class GlideDocking:
         self.ligand = ligand
         self.center = center
 
-    def pdbconvert(self, in_format="pdb", out_format="mae"):
+    def pdbconvert(self, in_format="pdb", out_format="mae", outdir="."):
         input_path = os.path.abspath(self.target)
         self.convert_output = os.path.basename(self.target.replace(f".{in_format}", f".{out_format}"))
+        self.convert_output = os.path.join(outdir, self.convert_output)
         schrodinger_path ="$SCHRODINGER/utilities/pdbconvert"
         command = f"{schrodinger_path} -i{in_format} {input_path} -o{out_format} {self.convert_output}"
         os.system(command)
@@ -53,6 +54,7 @@ class GlideDocking:
             time.sleep(10)
         self.generate_glide_input()
         self.glide()
+        self.pdbconvert(in_format="mae", out_format="pdb", outdir="docking_results")
 
 if __name__ == "__main__":
     args = parse_args()
