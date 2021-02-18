@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import argparse
 
@@ -20,6 +21,8 @@ class GlideDocking:
 
     def pdbconvert(self, file, in_format="pdb", out_format="mae", outdir="."):
         input_path = os.path.abspath(file)
+        if not os.path.isdir(outdir):
+            os.mkdir(outdir)
         self.convert_output = os.path.basename(self.target.replace(f".{in_format}", f".{out_format}"))
         self.convert_output = os.path.join(outdir, self.convert_output)
         schrodinger_path ="$SCHRODINGER/utilities/pdbconvert"
@@ -44,12 +47,15 @@ class GlideDocking:
     def glide(self):
         schrodinger_path = f"$SCHRODINGER/glide"
         command = f"{schrodinger_path} {self.glide_input}"
-        grid_job, ext = os.path.splitext(self.glide_input)
-        self.glide_output = f"{glide_job}-pv.maegz"
+        glide_job, ext = os.path.splitext(self.glide_input)
+        print(glide_job)
+        self.glide_output = f"{glide_job}_pv.maegz"
+        print(self.glide_output)
         os.system(command)
 
     def rename_files(self, indir = "docking_results"):
-        filelist = os.listdir(indir)
+        self.docking_dir = indir
+        filelist =[os.path.join(self.docking_dir, f) for f in os.listdir(self.docking_dir)] #poner en función aparte
         pattern = "^TITLE {5}(.*)"
         for f in filelist:
             if f.endswith("1.pdb"):
@@ -61,17 +67,20 @@ class GlideDocking:
                          if match:
                              pdb_name = match.group(1)
                              break
-                os.rename(f, f"{pdb_name}.pdb")
+                os.rename(f, f"{os.path.join(indir, pdb_name)}.pdb")
+                
 
-    def create_systems(ligchain, ligname):
+    def create_systems(self, ligchain="L", ligname="FRA"):
         if not os.path.isdir(self.final_dir):
             os.mkdir(self.final_dir)
-        filelist = [os.path.join(self.final_dir, f) for f in os.listdir(self.final_dir)]
+
+        filelist =[os.path.join(self.docking_dir, f) for f in os.listdir(self.docking_dir)]
+        targetname, ext = os.path.splitext(self.target)
 
         for i, f in enumerate(filelist):
-            targetname, ext = os.path.splitext(self.target)
-            system = open(f"{self.final_dir}/{targetname}_frag{i}.pdb", "w")
-            with open(targetpath, "r") as targetfile:
+            fragname, ext = os.path.splitext(os.path.basename(f))
+            system = open(f"{self.final_dir}/{targetname}_{fragname}.pdb", "w")
+            with open(self.target, "r") as targetfile:
                 [system.write(line) for line in targetfile if not line.startswith("END")]
             with open(f, "r") as fragfile:
                 for line in fragfile:
@@ -83,17 +92,18 @@ class GlideDocking:
 
     def run(self):
         self.pdbconvert(self.target)
-        while not os.path.exist(self.convert_output):
+        while not os.path.exists(self.convert_output):
             time.sleep(10)
         self.generate_glide_grids()
-        while not os.path.exist(self.gridfile):
+        while not os.path.exists(self.gridfile):
             time.sleep(10)
         self.generate_glide_input()
         self.glide()
-        while not os.path.exist(self.glide_output):
+        while not os.path.exists(self.glide_output):
             time.sleep(10)
         self.pdbconvert(self.glide_output, in_format="mae", out_format="pdb", outdir="docking_results") #!!!! hay que indicar input file
         self.rename_files()
+        self.create_systems()
 
 
 if __name__ == "__main__":
