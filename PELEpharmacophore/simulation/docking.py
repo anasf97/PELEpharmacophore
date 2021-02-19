@@ -32,6 +32,7 @@ class GlideDocking:
     def generate_glide_grids(self):
         schrodinger_path = "$SCHRODINGER/utilities/generate_glide_grids"
         command = f"{schrodinger_path}  -rec_file {self.convert_output} -cent_coor '{self.center}'"
+        print(self.convert_output)
         self.gridfile = "generate-grids-gridgen.zip"
         os.system(command)
 
@@ -72,7 +73,7 @@ class GlideDocking:
             os.mkdir(self.final_dir)
 
         filelist =[os.path.join(self.docking_dir, f) for f in os.listdir(self.docking_dir)]
-        targetname, ext = os.path.splitext(self.target)
+        targetname, ext = os.path.splitext(os.path.basename(self.target))
 
         for i, f in enumerate(filelist):
             fragname, ext = os.path.splitext(os.path.basename(f))
