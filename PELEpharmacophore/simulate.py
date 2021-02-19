@@ -15,7 +15,7 @@ def main(target, ligand, center):
     docking = dk.GlideDocking(target, ligand, center)
     docking.run()
     launch_file_creator = lf.LaunchFileCreator(docking.final_dir)
-    #sr.SimulationRunner(launch_file_creator.slurm_outdir)
+    sr.SimulationRunner(launch_file_creator.slurm_outdir)
 
 if __name__ == '__main__':
     args = parse_args()

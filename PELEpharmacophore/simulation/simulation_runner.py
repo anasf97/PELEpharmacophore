@@ -1,4 +1,5 @@
 import os
+import argparse
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Launch simlations from all slurm files in a directory.")
