@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from multiprocessing import Pool
-import PELEpharmacophore.target as tr
+import PELEpharmacophore.analysis.target as tr
 import PELEpharmacophore.yaml_parser as yp
 import PELEpharmacophore.valid_flags as vf
 import PELEpharmacophore.frag_features as ff

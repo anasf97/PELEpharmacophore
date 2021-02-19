@@ -42,6 +42,3 @@ def list_dict(dict_, key, value):
         dict_ = {}
     dict_.setdefault(key, []).append(value)
     return dict_
-
-def custom_path(dir, custom_var, string, ext):
-    return os.path.join(dir, f"{custom_var}{string}{ext}")
