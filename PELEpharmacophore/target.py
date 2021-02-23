@@ -11,7 +11,7 @@ import PELEpharmacophore.helpers as hl
 class Target():
 
     def __init__(self, indir):
-        self.result_dir = f"{indir}/"
+        self.result_dir = f"{indir}/output/0"
         self.trajectories = glob.glob(os.path.join(self.result_dir, "trajectory_*.pdb"))
         self.reports = glob.glob(os.path.join(self.result_dir, "report_*"))
         self.match_traj_and_report()
