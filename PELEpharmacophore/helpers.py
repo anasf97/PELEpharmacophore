@@ -45,3 +45,13 @@ def list_dict(dict_, key, value):
 
 def custom_path(dir, custom_var, string, ext):
     return os.path.join(dir, f"{custom_var}{string}{ext}")
+
+def accepted_pele_steps(report):
+    delimiter = " "*4
+    with open(report) as r:
+        columns = list(zip(*(line.strip().split(delimiter) for line in r)))
+
+    for column in columns:
+        if column[0] == 'numberOfAcceptedPeleSteps':
+            accepted_steps = column[1:]
+    return accepted_steps
