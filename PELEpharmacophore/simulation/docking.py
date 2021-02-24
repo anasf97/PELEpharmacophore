@@ -57,7 +57,7 @@ class GlideDocking:
         filelist =[os.path.join(self.docking_dir, f) for f in os.listdir(self.docking_dir)] #poner en función aparte
         pattern = "^TITLE {5}(.*)"
         for f in filelist:
-            if f.endswith("1.pdb"):
+            if f.endswith("-1.pdb"):
                 os.rename(f, self.target)
             else:
                 with open(f, 'r') as fh:
