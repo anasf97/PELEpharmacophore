@@ -11,7 +11,7 @@ import PELEpharmacophore.helpers as hl
 class Target():
 
     def __init__(self, indir):
-        self.result_dir = f"{indir}"
+        self.result_dir = f"{indir}/1"
         self.trajectories = glob.glob(os.path.join(self.result_dir, "trajectory_*.pdb"))
         self.reports = glob.glob(os.path.join(self.result_dir, "report_*"))
         self.match_traj_and_report()
@@ -93,7 +93,8 @@ class Target():
                     for feature, other_freq in other_voxel.freq_dict.items():
                         voxel.freq_dict = hl.frequency_dict(voxel.freq_dict, feature, other_freq)
                         other_models = other_voxel.origin_dict[feature]
-                        voxel.origin_dict = hl.list_dict(voxel.origin_dict, feature, *other_models)
+                        for model in other_models:
+                            voxel.origin_dict = hl.list_dict(voxel.origin_dict, feature, model)
         return grid
 
     def set_frequency_filter(self, threshold):
@@ -147,11 +148,11 @@ class Atom:
 
 
 if __name__ == "__main__":
-    target = Target("/home/ana/test4")
+    target = Target("/home/ana/GitRepositories/PELEpharmacophore/PELEpharmacophore")
     print(target.trajectories)
-    target.set_ligand("L", "FRA", 900)
-    #features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
-    features={'NEG': ['C2'], 'ALI': ['C1']}
+    target.set_ligand("L", "SB2", 800)
+    features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
+    #features={'NEG': ['C2'], 'ALI': ['C1']}
     target.set_features(features)
     target.set_grid((2.173, 15.561, 28.257), 7)
     with Pool(5) as p: # add n_workers as arg
