@@ -80,9 +80,10 @@ class Target():
                 voxel = self.grid.voxels[i]
                 if other_voxel.freq_dict:
                     for feature, other_freq in other_voxel.freq_dict.items():
-                        hl.frequency_dict(voxel.freq_dict, feature, other_freq)
+                        voxel.freq_dict = hl.frequency_dict(voxel.freq_dict, feature, other_freq)
                         other_models = other_voxel.origin_dict[feature]
-                        [hl.list_dict(voxel.origin_dict, feature, model) for model in other_models]
+                        for model in other_models:
+                            voxel.origin_dict = hl.list_dict(voxel.origin_dict, feature, model) 
         return self.grid
 
     def set_frequency_filter(self, threshold):
