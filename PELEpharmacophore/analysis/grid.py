@@ -46,6 +46,9 @@ class Grid:
     def add_active_voxel(self, voxel):
         self.active_voxels.append(voxel)
 
+    def is_empty(self):
+        return not any(v.freq_dict for v in self.voxels)
+
 
 class Voxel:
 
