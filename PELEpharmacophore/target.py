@@ -11,7 +11,7 @@ import PELEpharmacophore.helpers as hl
 class Target():
 
     def __init__(self, indir):
-        self.result_dir = f"{indir}/1"
+        self.result_dir = f"{indir}/output/0"
         self.trajectories = glob.glob(os.path.join(self.result_dir, "trajectory_*.pdb"))
         self.reports = glob.glob(os.path.join(self.result_dir, "report_*"))
         self.match_traj_and_report()
@@ -60,6 +60,10 @@ class Target():
         model_grid = copy.deepcopy(self.grid)
         voxel_centers = np.array([v.center for v in model_grid.voxels])
         atom_coords = np.array([a.atom.get_coord() for a in grid_atoms])
+        print(np.shape(voxel_centers))
+        print(voxel_centers)
+        print(np.shape(atom_coords))
+        print(atom_coords)
         dist = distance.cdist(atom_coords, voxel_centers, 'euclidean')
         min = dist.argmin(axis=1) #get index of closest voxel to each atom
         voxel_dict = {}
@@ -73,14 +77,16 @@ class Target():
 
     def analyze_trajectory(self, traj_and_report):
         trajfile, report = traj_and_report
+        print(traj_and_report)
         trajectory = self.get_structure(trajfile)
         accepted_steps = hl.accepted_pele_steps(report)
         traj_grid = copy.deepcopy(self.grid)
         for step in accepted_steps:
             model = trajectory[step]
             grid_atoms = self.get_grid_atoms(model)
-            model_grid = self.check_voxels(grid_atoms)
-            traj_grid = self.merge_grids(traj_grid, model_grid)
+            if grid_atoms:
+                model_grid = self.check_voxels(grid_atoms)
+                traj_grid = self.merge_grids(traj_grid, model_grid)
         return traj_grid
 
     def merge_grids(self, grid, other_grid):
@@ -108,7 +114,7 @@ class Target():
             hist, bin_edges = np.histogram(freqlist)
             self.threshold_dict[element] = bin_edges[threshold]
 
-    def save_pharmacophores(self, outdir="Pharmacophores"):
+    def save_pharmacophores(self, outdir="Pharmacophores5"):
         if not os.path.isdir(outdir):
             os.mkdir(outdir)
         for feature in self.threshold_dict:
@@ -148,11 +154,11 @@ class Atom:
 
 
 if __name__ == "__main__":
-    target = Target("/home/ana/GitRepositories/PELEpharmacophore/PELEpharmacophore")
+    target = Target("/home/ana/Documentos/Bioinformatica/Segundo/TFM/test5")
     print(target.trajectories)
-    target.set_ligand("L", "SB2", 800)
-    features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
-    #features={'NEG': ['C2'], 'ALI': ['C1']}
+    target.set_ligand("L", "FRA", 900)
+    #features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
+    features={'NEG': ['C2'], 'ALI': ['C1']}
     target.set_features(features)
     target.set_grid((2.173, 15.561, 28.257), 7)
     with Pool(5) as p: # add n_workers as arg
@@ -163,7 +169,7 @@ if __name__ == "__main__":
     for traj_grid in traj_grids:
         target.grid = target.merge_grids(target.grid, traj_grid)
 
-    target.set_frequency_filter(2)
+    target.set_frequency_filter(0)
     target.save_pharmacophores()
 
     #print([v.freq_dict for v in target.grid.voxels])
