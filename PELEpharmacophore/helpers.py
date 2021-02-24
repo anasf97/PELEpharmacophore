@@ -53,5 +53,5 @@ def accepted_pele_steps(report):
 
     for column in columns:
         if column[0] == 'numberOfAcceptedPeleSteps':
-            accepted_steps = column[1:]
+            accepted_steps = [int(value) for value in column[1:]]
     return accepted_steps

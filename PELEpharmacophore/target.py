@@ -11,7 +11,7 @@ import PELEpharmacophore.helpers as hl
 class Target():
 
     def __init__(self, indir):
-        self.result_dir = f"{indir}/output/0"
+        self.result_dir = f"{indir}"
         self.trajectories = glob.glob(os.path.join(self.result_dir, "trajectory_*.pdb"))
         self.reports = glob.glob(os.path.join(self.result_dir, "report_*"))
         self.match_traj_and_report()
@@ -77,7 +77,7 @@ class Target():
         accepted_steps = hl.accepted_pele_steps(report)
         traj_grid = copy.deepcopy(self.grid)
         for step in accepted_steps:
-            model = trajectory[0]
+            model = trajectory[step]
             grid_atoms = self.get_grid_atoms(model)
             model_grid = self.check_voxels(grid_atoms)
             traj_grid = self.merge_grids(traj_grid, model_grid)
@@ -91,9 +91,9 @@ class Target():
                 voxel = grid.voxels[i]
                 if other_voxel.freq_dict:
                     for feature, other_freq in other_voxel.freq_dict.items():
-                        hl.frequency_dict(voxel.freq_dict, feature, other_freq)
+                        voxel.freq_dict = hl.frequency_dict(voxel.freq_dict, feature, other_freq)
                         other_models = other_voxel.origin_dict[feature]
-                        [hl.list_dict(voxel.origin_dict, feature, model) for model in other_models]
+                        voxel.origin_dict = hl.list_dict(voxel.origin_dict, feature, *other_models)
         return grid
 
     def set_frequency_filter(self, threshold):
@@ -165,8 +165,7 @@ if __name__ == "__main__":
     target.set_frequency_filter(2)
     target.save_pharmacophores()
 
-    for v in target.grid.voxels:
-        print(v.freq_dict)
+    #print([v.freq_dict for v in target.grid.voxels])
 
     # s = Snap("processed_1a9u.pdb")
     # s.set_grid((2.173, 15.561, 28.257), 6)
