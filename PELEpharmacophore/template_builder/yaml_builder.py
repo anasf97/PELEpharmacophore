@@ -4,7 +4,7 @@ from PELEpharmacophore.template_builder import base_class as bc
 yaml_default_values = {"system": None,
               "chain": None,
               "resname": None,
-              "induced_fit_exhaustive": None,
+              "induced_fit_exhaustive": "true",
               "seed": 12345,
               "usesrun": None,
               "working_folder": None,

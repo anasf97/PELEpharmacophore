@@ -98,7 +98,13 @@ class SimulationAnalyzer():
         return grid
 
     def run(self, ncpus):
-        pass
+        with Pool(ncpus) as p:
+            traj_grids = p.map(self.analyze_trajectory, self.traj_and_reports)
+            p.close()
+            p.join()
+
+        for traj_grid in traj_grids:
+            self.grid = self.merge_grids(target.grid, traj_grid)
 
     def set_frequency_filter(self, threshold):
         freq_dict_all = {}
@@ -158,14 +164,7 @@ if __name__ == "__main__":
     #features={'NEG': ['C2'], 'ALI': ['C1']}
     target.set_features(features)
     target.set_grid((2.173, 15.561, 28.257), 7)
-    with Pool(5) as p: # add n_workers as arg
-        traj_grids = p.map(target.analyze_trajectory, target.traj_and_reports)
-        p.close()
-        p.join()
-
-    for traj_grid in traj_grids:
-        target.grid = target.merge_grids(target.grid, traj_grid)
-
+    target.run(5)
     target.set_frequency_filter(2)
     target.save_pharmacophores()
 
