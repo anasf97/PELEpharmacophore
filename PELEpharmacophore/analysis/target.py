@@ -1,14 +1,14 @@
 import os
 import re
-import numpy as np
 import glob
 import copy
+import numpy as np
 from scipy.spatial import distance
 from multiprocessing import Pool
-import PELEpharmacophore.grid as gr
+import PELEpharmacophore.analysis.grid as gr
 import PELEpharmacophore.helpers as hl
 
-class Target():
+class SimulationAnalyzer():
 
     def __init__(self, indir):
         self.result_dir = f"{indir}/1"
@@ -97,6 +97,9 @@ class Target():
                             voxel.origin_dict = hl.list_dict(voxel.origin_dict, feature, model)
         return grid
 
+    def run(self, ncpus):
+        pass
+
     def set_frequency_filter(self, threshold):
         freq_dict_all = {}
         self.threshold_dict = {}
@@ -148,7 +151,7 @@ class Atom:
 
 
 if __name__ == "__main__":
-    target = Target("/home/ana/GitRepositories/PELEpharmacophore/PELEpharmacophore")
+    target = SimulationAnalyzer("/home/ana/GitRepositories/PELEpharmacophore/PELEpharmacophore")
     print(target.trajectories)
     target.set_ligand("L", "SB2", 800)
     features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
