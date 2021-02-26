@@ -1,3 +1,4 @@
+import os
 from argparse import ArgumentParser
 from PELEpharmacophore.errors import custom_errors as ce
 import PELEpharmacophore.analysis.simulation_analyzer as sa
@@ -6,13 +7,13 @@ import PELEpharmacophore.valid_flags as vf
 import PELEpharmacophore.data.fragment_features as ff
 
 
-def parse_args(args):
+def parse_args():
     '''
     Command line parser
     '''
     parser = ArgumentParser(description='Run PELEpharmacophore analysis')
     parser.add_argument('input_file', type=str, help='Yaml input file')
-    args = parser.parse_args(args) if args else parser.parse_args()
+    args = parser.parse_args()
     return args.input_file
 
 def run_PELEpharmacophore(dir, chain, resname, resnum, center, radius, features, ncpus):
@@ -23,22 +24,22 @@ def run_PELEpharmacophore(dir, chain, resname, resnum, center, radius, features,
     analyzer.run(ncpus)
     return analyzer
 
-def PELEpharmacophore_ligand(dir, chain, resname, resnum, center, radius, features, ncpus, filter=2):
+def PELEpharmacophore_ligand(dir, chain, resname, resnum, center, radius, features, ncpus, filt=2):
     analyzer = run_PELEpharmacophore(dir, chain, resname, resnum, center, radius, features, ncpus)
-    analyzer.set_frequency_filter(filter) # add filter as arg
+    analyzer.set_frequency_filter(filt) # add filter as arg
     analyzer.save_pharmacophores()
     return analyzer
 
-def PELEpharmacophore_fragments(dir, center, radius, ncpus=20, fragment_features=ff.fragment_features, filter=2):
-    analyzer_frags = SimulationAnalyzer()
+def PELEpharmacophore_fragments(dir, center, radius, ncpus=20, fragment_features=ff.fragment_features, filt=0):
+    analyzer_frags = sa.SimulationAnalyzer()
     analyzer_frags.set_grid(center, radius)
-    subdirs = os.listdir(dir)
+    subdirs = [os.path.join(dir, subdir) for subdir in os.listdir(dir)]
     for frag, features in fragment_features.items():
         frag_dir = [s for s in subdirs if s.endswith(frag)][0]
-        analyzer = run_PELEpharmacophore(frag_dir, "L", "FRA", 900, center, radius, ncpus, features)
-        analyzer_frags.merge_grids(analyzer_frags.grid, analyzer.grid)
-    analyzer_frags.set_frequency_filter(filter)
-    analyzer_frags.save_pharmacophores()
+        analyzer = run_PELEpharmacophore(frag_dir, "L", "FRA", 900, center, radius, features, ncpus)
+        analyzer_frags.grid = analyzer_frags.merge_grids(analyzer_frags.grid, analyzer.grid)
+    analyzer_frags.set_frequency_filter(filt)
+    analyzer_frags.save_pharmacophores("PELEpharmacophore")
     return analyzer_frags
 
 def main(input_yaml):

@@ -1,8 +1,8 @@
 import os
 import re
+import numpy as np
 import glob
 import copy
-import numpy as np
 from scipy.spatial import distance
 from multiprocessing import Pool
 import PELEpharmacophore.analysis.grid as gr
@@ -10,8 +10,8 @@ import PELEpharmacophore.helpers as hl
 
 class SimulationAnalyzer():
 
-    def __init__(self, indir):
-        self.result_dir = f"{indir}/1"
+    def __init__(self, indir=None):
+        self.result_dir = f"{indir}/output/0"
         self.trajectories = glob.glob(os.path.join(self.result_dir, "trajectory_*.pdb"))
         self.reports = glob.glob(os.path.join(self.result_dir, "report_*"))
         self.match_traj_and_report()
@@ -73,17 +73,19 @@ class SimulationAnalyzer():
 
     def analyze_trajectory(self, traj_and_report):
         trajfile, report = traj_and_report
+        print(traj_and_report)
         trajectory = self.get_structure(trajfile)
         accepted_steps = hl.accepted_pele_steps(report)
         traj_grid = copy.deepcopy(self.grid)
         for step in accepted_steps:
             model = trajectory[step]
             grid_atoms = self.get_grid_atoms(model)
-            model_grid = self.check_voxels(grid_atoms)
-            traj_grid = self.merge_grids(traj_grid, model_grid)
+            if grid_atoms:
+                model_grid = self.check_voxels(grid_atoms)
+                traj_grid = self.merge_grids(traj_grid, model_grid)
         return traj_grid
 
-    def merge_grids(self, grid, other_grid):
+    def merge_grids(self, grid,  other_grid):
         if grid.is_empty():
             grid = copy.deepcopy(other_grid)
         else:
@@ -98,13 +100,14 @@ class SimulationAnalyzer():
         return grid
 
     def run(self, ncpus):
-        with Pool(ncpus) as p:
+        with Pool(ncpus) as p: 
             traj_grids = p.map(self.analyze_trajectory, self.traj_and_reports)
             p.close()
             p.join()
 
         for traj_grid in traj_grids:
-            self.grid = self.merge_grids(target.grid, traj_grid)
+            self.grid = self.merge_grids(self.grid, traj_grid)
+
 
     def set_frequency_filter(self, threshold):
         freq_dict_all = {}
@@ -157,15 +160,22 @@ class Atom:
 
 
 if __name__ == "__main__":
-    target = SimulationAnalyzer("/home/ana/GitRepositories/PELEpharmacophore/PELEpharmacophore")
+    target = Target("/home/ana/Documentos/Bioinformatica/Segundo/TFM/test5")
     print(target.trajectories)
-    target.set_ligand("L", "SB2", 800)
-    features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
-    #features={'NEG': ['C2'], 'ALI': ['C1']}
+    target.set_ligand("L", "FRA", 900)
+    #features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
+    features={'NEG': ['C2'], 'ALI': ['C1']}
     target.set_features(features)
     target.set_grid((2.173, 15.561, 28.257), 7)
-    target.run(5)
-    target.set_frequency_filter(2)
+    with Pool(5) as p: # add n_workers as arg
+        traj_grids = p.map(target.analyze_trajectory, target.traj_and_reports)
+        p.close()
+        p.join()
+
+    for traj_grid in traj_grids:
+        target.grid = target.merge_grids(target.grid, traj_grid)
+
+    target.set_frequency_filter(0)
     target.save_pharmacophores()
 
     #print([v.freq_dict for v in target.grid.voxels])

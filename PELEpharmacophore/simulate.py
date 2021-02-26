@@ -4,14 +4,14 @@ from PELEpharmacophore.simulation import docking as dk
 from PELEpharmacophore.simulation import launch_file_creator as lf
 from PELEpharmacophore.simulation import simulation_runner as sr
 
-def parse_args(args):
+def parse_args():
     """
     Command line parser
     """
     parser = ArgumentParser(description='Run PELEpharmacophore simulations')
     parser.add_argument('input_file', type=str, help='Yaml input file')
-    args = parser.parse_args(args) if args else parser.parse_args()
-    return args.input_file
+    args = parser.parse_args()
+    return args.input_file 
 
 def simulate(target, ligand, center):
     docking = dk.GlideDocking(target, ligand, center)
