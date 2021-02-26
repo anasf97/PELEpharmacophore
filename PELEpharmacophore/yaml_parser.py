@@ -55,6 +55,8 @@ class YamlParser(object):
         self.resnum = data.get(valid_flags["resnum"], "")
         self.features = data.get(valid_flags["features"], None)
         self.grid_center = data.get(valid_flags["grid_center"], None)
+        self.grid_radius = data.get(valid_flags["grid_radius"], None)
+        self.ligand = data.get(valid_flags["ligand"], None)
         #self.verbose = data.get(valid_flags["verbose"], None)
 
 @dataclass

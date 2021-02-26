@@ -32,6 +32,7 @@ class GlideDocking:
     def generate_glide_grids(self):
         schrodinger_path = "$SCHRODINGER/utilities/generate_glide_grids"
         command = f"{schrodinger_path}  -rec_file {self.convert_output} -cent_coor '{self.center}'"
+        print(self.convert_output)
         self.gridfile = "generate-grids-gridgen.zip"
         os.system(command)
 
@@ -48,9 +49,7 @@ class GlideDocking:
         schrodinger_path = f"$SCHRODINGER/glide"
         command = f"{schrodinger_path} {self.glide_input}"
         glide_job, ext = os.path.splitext(self.glide_input)
-        print(glide_job)
         self.glide_output = f"{glide_job}_pv.maegz"
-        print(self.glide_output)
         os.system(command)
 
     def rename_files(self, indir = "docking_results"):
@@ -58,7 +57,7 @@ class GlideDocking:
         filelist =[os.path.join(self.docking_dir, f) for f in os.listdir(self.docking_dir)] #poner en función aparte
         pattern = "^TITLE {5}(.*)"
         for f in filelist:
-            if f.endswith("1.pdb"):
+            if f.endswith("-1.pdb"):
                 os.rename(f, self.target)
             else:
                 with open(f, 'r') as fh:
@@ -68,14 +67,13 @@ class GlideDocking:
                              pdb_name = match.group(1)
                              break
                 os.rename(f, f"{os.path.join(indir, pdb_name)}.pdb")
-                
 
     def create_systems(self, ligchain="L", ligname="FRA"):
         if not os.path.isdir(self.final_dir):
             os.mkdir(self.final_dir)
 
         filelist =[os.path.join(self.docking_dir, f) for f in os.listdir(self.docking_dir)]
-        targetname, ext = os.path.splitext(self.target)
+        targetname, ext = os.path.splitext(os.path.basename(self.target))
 
         for i, f in enumerate(filelist):
             fragname, ext = os.path.splitext(os.path.basename(f))

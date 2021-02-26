@@ -5,12 +5,12 @@ import glob
 import copy
 from scipy.spatial import distance
 from multiprocessing import Pool
-import PELEpharmacophore.grid as gr
+import PELEpharmacophore.analysis.grid as gr
 import PELEpharmacophore.helpers as hl
 
-class Target():
+class SimulationAnalyzer():
 
-    def __init__(self, indir):
+    def __init__(self, indir=None):
         self.result_dir = f"{indir}/output/0"
         self.trajectories = glob.glob(os.path.join(self.result_dir, "trajectory_*.pdb"))
         self.reports = glob.glob(os.path.join(self.result_dir, "report_*"))
@@ -60,10 +60,6 @@ class Target():
         model_grid = copy.deepcopy(self.grid)
         voxel_centers = np.array([v.center for v in model_grid.voxels])
         atom_coords = np.array([a.atom.get_coord() for a in grid_atoms])
-        print(np.shape(voxel_centers))
-        print(voxel_centers)
-        print(np.shape(atom_coords))
-        print(atom_coords)
         dist = distance.cdist(atom_coords, voxel_centers, 'euclidean')
         min = dist.argmin(axis=1) #get index of closest voxel to each atom
         voxel_dict = {}
@@ -89,7 +85,7 @@ class Target():
                 traj_grid = self.merge_grids(traj_grid, model_grid)
         return traj_grid
 
-    def merge_grids(self, grid, other_grid):
+    def merge_grids(self, grid,  other_grid):
         if grid.is_empty():
             grid = copy.deepcopy(other_grid)
         else:
@@ -103,6 +99,16 @@ class Target():
                             voxel.origin_dict = hl.list_dict(voxel.origin_dict, feature, model)
         return grid
 
+    def run(self, ncpus):
+        with Pool(ncpus) as p: 
+            traj_grids = p.map(self.analyze_trajectory, self.traj_and_reports)
+            p.close()
+            p.join()
+
+        for traj_grid in traj_grids:
+            self.grid = self.merge_grids(self.grid, traj_grid)
+
+
     def set_frequency_filter(self, threshold):
         freq_dict_all = {}
         self.threshold_dict = {}
@@ -114,7 +120,7 @@ class Target():
             hist, bin_edges = np.histogram(freqlist)
             self.threshold_dict[element] = bin_edges[threshold]
 
-    def save_pharmacophores(self, outdir="Pharmacophores5"):
+    def save_pharmacophores(self, outdir="Pharmacophores"):
         if not os.path.isdir(outdir):
             os.mkdir(outdir)
         for feature in self.threshold_dict:
