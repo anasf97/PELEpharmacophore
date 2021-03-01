@@ -167,7 +167,7 @@ if __name__ == "__main__":
     target.run(5)
 
     target.set_frequency_filter(0)
-    target.save_pharmacophores("holi")
+    target.save_pharmacophores()
 
     #print([v.freq_dict for v in target.grid.voxels])
 
