@@ -1,4 +1,6 @@
 import os
+from multiprocessing import Pool
+from functools import partial
 from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.NeighborSearch import NeighborSearch
 
@@ -55,3 +57,13 @@ def accepted_pele_steps(report):
         if column[0] == 'numberOfAcceptedPeleSteps':
             accepted_steps = [int(value) for value in column[1:]]
     return accepted_steps
+
+def parallelize(func, iterable, n_workers, **kwargs):
+    f = partial(func, **kwargs)
+    if n_workers > 1:
+        pool = Pool(n_workers)
+        return pool.map(f, iterable)
+        pool.close()
+        pool.join()
+    else:
+        return list(map(f, iterable))
