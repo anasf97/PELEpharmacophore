@@ -20,12 +20,12 @@ class SimulationAnalyzer():
     def match_traj_and_report(self):
         self.trajectories.sort()
         self.reports.sort()
-        self.traj_and_reports = zip(self.trajectories, self.reports)
+        self.traj_and_reports = list(zip(self.trajectories, self.reports))
 
-    def set_ligand(self, chain, name, residue):
+    def set_ligand(self, chain, resname, resnum):
         self.chain = chain
-        self.name = name
-        self.residue = residue
+        self.resname = resname
+        self.resnum = resnum
 
     def set_features(self, features):
         self.features = features
@@ -44,7 +44,7 @@ class SimulationAnalyzer():
         atoms = []
         for feature, atomlist in self.features.items():
             for atom in atomlist:
-                bio_atom = model[self.chain][(f"H_{self.name}", self.residue, " ")][atom]
+                bio_atom = model[self.chain][(f"H_{self.resname}", self.resnum, " ")][atom]
                 atoms.append(bio_atom)
 
                 a = Atom(bio_atom)
@@ -73,7 +73,6 @@ class SimulationAnalyzer():
 
     def analyze_trajectory(self, traj_and_report):
         trajfile, report = traj_and_report
-        print(traj_and_report)
         trajectory = self.get_structure(trajfile)
         accepted_steps = hl.accepted_pele_steps(report)
         traj_grid = copy.deepcopy(self.grid)
@@ -85,7 +84,7 @@ class SimulationAnalyzer():
                 traj_grid = self.merge_grids(traj_grid, model_grid)
         return traj_grid
 
-    def merge_grids(self, grid,  other_grid):
+    def merge_grids(self, grid, other_grid):
         if grid.is_empty():
             grid = copy.deepcopy(other_grid)
         else:
@@ -100,10 +99,7 @@ class SimulationAnalyzer():
         return grid
 
     def run(self, ncpus):
-        with Pool(ncpus) as p: 
-            traj_grids = p.map(self.analyze_trajectory, self.traj_and_reports)
-            p.close()
-            p.join()
+        traj_grids = hl.parallelize(self.analyze_trajectory, self.traj_and_reports, ncpus)
 
         for traj_grid in traj_grids:
             self.grid = self.merge_grids(self.grid, traj_grid)
@@ -119,6 +115,7 @@ class SimulationAnalyzer():
         for element, freqlist in freq_dict_all.items():
             hist, bin_edges = np.histogram(freqlist)
             self.threshold_dict[element] = bin_edges[threshold]
+        return self.threshold_dict
 
     def save_pharmacophores(self, outdir="Pharmacophores"):
         if not os.path.isdir(outdir):
@@ -160,23 +157,17 @@ class Atom:
 
 
 if __name__ == "__main__":
-    target = Target("/home/ana/Documentos/Bioinformatica/Segundo/TFM/test5")
-    print(target.trajectories)
-    target.set_ligand("L", "FRA", 900)
-    #features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
-    features={'NEG': ['C2'], 'ALI': ['C1']}
+    target = SimulationAnalyzer("../tests/data/simulation_1")
+    target.set_ligand("L", "SB2", 800)
+    features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
+    #features={'NEG': ['C2'], 'ALI': ['C1']}
     target.set_features(features)
     target.set_grid((2.173, 15.561, 28.257), 7)
-    with Pool(5) as p: # add n_workers as arg
-        traj_grids = p.map(target.analyze_trajectory, target.traj_and_reports)
-        p.close()
-        p.join()
 
-    for traj_grid in traj_grids:
-        target.grid = target.merge_grids(target.grid, traj_grid)
+    target.run(5)
 
     target.set_frequency_filter(0)
-    target.save_pharmacophores()
+    target.save_pharmacophores("holi")
 
     #print([v.freq_dict for v in target.grid.voxels])
 
