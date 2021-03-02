@@ -9,36 +9,117 @@ import PELEpharmacophore.analysis.grid as gr
 import PELEpharmacophore.helpers as hl
 
 class SimulationAnalyzer():
+    """
+    Class for analysing PELE simulations.
+    """
 
     def __init__(self, indir=None):
+        """
+        Create a new SimulationAnalyzer object.
+
+        Parameters
+        ----------
+        indir : str
+             Name of the simulation directory.
+        """
         self.result_dir = f"{indir}/output/0"
         self.trajectories = glob.glob(os.path.join(self.result_dir, "trajectory_*.pdb"))
         self.reports = glob.glob(os.path.join(self.result_dir, "report_*"))
         self.match_traj_and_report()
         self.chain = None
 
+
     def match_traj_and_report(self):
+        """
+        Match each trajectory wihth its respective report.
+        """
         self.trajectories.sort()
         self.reports.sort()
         self.traj_and_reports = list(zip(self.trajectories, self.reports))
 
+
     def set_ligand(self, chain, resname, resnum):
+        """
+        Set the parameters that define the ligand.
+
+        Parameters
+        ----------
+        chain : str
+             Ligand chain name.
+        resname : str
+             Ligand residue name.
+        resnum : int
+             Ligand residue number.
+        """
         self.chain = chain
         self.resname = resname
         self.resnum = resnum
 
+
     def set_features(self, features):
+        """
+        Set the pharmacophore features of the ligand.
+
+        Parameters
+        ----------
+        features : dict
+             Dictionary of ligand features.
+             Keys define the features and values, atoms associated with said feature.
+
+        Examples
+        ----------
+        >>> features = {'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2']}
+        """
         self.features = features
 
+
     def set_grid(self, center, radius):
+        """
+        Set the grid .
+
+        Parameters
+        ----------
+        center : list
+            xyz coordinates of the grid center.
+        radius : int
+            Length of half the side of the grid.
+        """
         self.grid = gr.Grid(center, radius)
         self.grid.generate_voxels()
 
+
     def get_structure(self, file):
+        """
+        Parses a PDB file and returns a structure object.
+
+        Parameters
+        ----------
+        file : str
+            PDB file path.
+
+        Returns
+        ----------
+        structure : Bio.PDB.Structure
+            Biopython structure object.
+        """
         structure = hl.read_pdb(file)
         return structure
 
+
     def get_grid_atoms(self, model):
+        """
+        Gets all the atoms inside the grid for a given model.
+
+        Parameters
+        ----------
+        model : Bio.PDB.Model
+            Biopython model object.
+
+        Returns
+        ----------
+        featured_grid_atoms : list of Atom objects
+            Atoms inside the grid.
+        """
         dist = np.sqrt(3)*self.grid.radius #get dist from center to vertex
         featured_atoms = []
         atoms = []
@@ -57,6 +138,19 @@ class SimulationAnalyzer():
         return featured_grid_atoms
 
     def check_voxels(self, grid_atoms):
+        """
+        Check which atoms are inside which voxel of the grid.
+
+        Parameters
+        ----------
+        grid_atoms : list of Atom objects
+            Atoms inside the grid.
+
+        Returns
+        ----------
+        model_grid : Grid object
+            Grid object that contains the given atoms in the correspondent voxels.
+        """
         model_grid = copy.deepcopy(self.grid)
         voxel_centers = np.array([v.center for v in model_grid.voxels])
         atom_coords = np.array([a.atom.get_coord() for a in grid_atoms])
@@ -67,11 +161,26 @@ class SimulationAnalyzer():
             feature = atom.get_feature()
             origin = atom.get_origin()
             voxel = min[i]
-            model_grid.voxels[voxel].count_feature(feature) #ir añadiendo la frecuencia de cada atomo en un diccionario
-            model_grid.voxels[voxel].add_origin(feature, origin) #añadir tambien DICCIONARIO con los modelos de origen
+            model_grid.voxels[voxel].count_feature(feature) # add feature of the atom inside the voxel
+            model_grid.voxels[voxel].add_origin(feature, origin) # add origin of the atom inside the voxel
         return model_grid
 
     def analyze_trajectory(self, traj_and_report):
+        """
+        Analyze a given trajectory file.
+        The analysis consist in, for each of the models in the trajectory,
+        getting the atoms inside the grid and checking the voxels.
+
+        Parameters
+        ----------
+        traj_and_report : tuple
+            Trajectory and its respective report.
+
+        Returns
+        ----------
+        traj_grid : Grid object
+            Grid that contains the atoms for all the models in the trajectory.
+        """
         trajfile, report = traj_and_report
         trajectory = self.get_structure(trajfile)
         accepted_steps = hl.accepted_pele_steps(report)
@@ -85,6 +194,19 @@ class SimulationAnalyzer():
         return traj_grid
 
     def merge_grids(self, grid, other_grid):
+        """
+        Merge the information from two grids together.
+
+        Parameters
+        ----------
+        grid, other_grid : Grid object
+            Grids to merge.
+
+        Returns
+        ----------
+        grid : Grid object
+            Merged grid.
+        """
         if grid.is_empty():
             grid = copy.deepcopy(other_grid)
         else:
@@ -99,6 +221,14 @@ class SimulationAnalyzer():
         return grid
 
     def run(self, ncpus):
+        """
+        Analyze the full simulation.
+
+        Parameters
+        ----------
+        ncpus : int
+            Number of processors.
+        """
         traj_grids = hl.parallelize(self.analyze_trajectory, self.traj_and_reports, ncpus)
 
         for traj_grid in traj_grids:
@@ -106,6 +236,16 @@ class SimulationAnalyzer():
 
 
     def set_frequency_filter(self, threshold):
+        """
+        Set a threshold to not show voxels with lower frequencies.
+        For each feature, it creates a histogram of 10 bins with the frequencies of each voxel.
+
+        Parameters
+        ----------
+        threshold : int
+            Number of the bins that won't be saved.
+            E. g.: if it's 1, the voxels on the first bin of the histogram won't be saved.
+        """
         freq_dict_all = {}
         self.threshold_dict = {}
         for voxel in self.grid.voxels:
@@ -118,6 +258,14 @@ class SimulationAnalyzer():
         return self.threshold_dict
 
     def save_pharmacophores(self, outdir="Pharmacophores"):
+        """
+        Save pharmacophore files in PDB format.
+
+        Parameters
+        ----------
+        outdir : str
+            Directory with the results.
+        """
         if not os.path.isdir(outdir):
             os.mkdir(outdir)
         for feature in self.threshold_dict:
