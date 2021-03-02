@@ -21,9 +21,9 @@ def test_get_grid_atoms(simulation_analyzer_1, atom_ids, trajectory=TRAJECTORY_1
 
 EXPECTED_VOXELS_CV = [77, 582, 932, 1070, 1295, 1868, 2400, 2639]
 
-def test_check_voxels(simulation_analyzer_1, active_voxels, expected_voxels=EXPECTED_VOXELS_CV):
+def test_check_voxels(simulation_analyzer_1, active_voxels, trajectory=TRAJECTORY_1, expected_voxels=EXPECTED_VOXELS_CV):
     sa = simulation_analyzer_1
-    str = sa.get_structure(TRAJECTORY_1)
+    str = sa.get_structure(trajectory)
 
     grid_atoms = sa.get_grid_atoms(str[0])
     grid = sa.check_voxels(grid_atoms)
@@ -34,9 +34,9 @@ def test_check_voxels(simulation_analyzer_1, active_voxels, expected_voxels=EXPE
 
 EXPECTED_VOXELS_MG = [77, 582, 720, 932, 1070, 1267, 1295, 1646, 1868, 2400, 2414, 2626, 2639]
 
-def test_merge_grids(simulation_analyzer_1, active_voxels, expected_voxels=EXPECTED_VOXELS_MG):
+def test_merge_grids(simulation_analyzer_1, active_voxels, trajectory=TRAJECTORY_1, expected_voxels=EXPECTED_VOXELS_MG):
     sa = simulation_analyzer_1
-    str = sa.get_structure(TRAJECTORY_1)
+    str = sa.get_structure(trajectory)
 
     grid_atoms1 = sa.get_grid_atoms(str[0])
     grid_atoms2 = sa.get_grid_atoms(str[1])

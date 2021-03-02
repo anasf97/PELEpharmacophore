@@ -26,11 +26,14 @@ class LaunchFileCreator(object):
         for f in self.filelist:
             system_pdb = os.path.basename(f)
             system, ext = os.path.splitext(system_pdb)
+
             working_folder = os.path.join(self.simulation_folder, system)
+            
             yaml_args = self.yaml_args(f, self.ligchain, self.ligname, working_folder)
             yaml_name = system_pdb.replace(".pdb", ".yml")
             yaml_path = os.path.join(yaml_outdir, yaml_name)
             yb.YamlBuilder(yaml_args, yaml_name, yaml_outdir)
+
             slurm_args = self.slurm_args(working_folder, yaml_path, self.ncpus)
             slurm_name = system_pdb.replace(".pdb", ".sl")
             sb.SlurmBuilder(slurm_args, slurm_name, slurm_outdir)
