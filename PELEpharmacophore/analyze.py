@@ -1,7 +1,7 @@
 import os
 from argparse import ArgumentParser
 from PELEpharmacophore.errors import custom_errors as ce
-import PELEpharmacophore.analysis.simulation_analyzer as sa
+import PELEpharmacophore.analysis.grid_analyzer as ga
 import PELEpharmacophore.yaml_parser as yp
 import PELEpharmacophore.valid_flags as vf
 import PELEpharmacophore.data.fragment_features as ff
@@ -17,7 +17,7 @@ def parse_args():
     return args.input_file
 
 def run_PELEpharmacophore(dir, chain, resname, resnum, center, radius, features, ncpus):
-    analyzer = sa.SimulationAnalyzer(dir)
+    analyzer = ga.GridAnalizer(dir)
     analyzer.set_ligand(chain, resname, resnum)
     analyzer.set_features(features)
     analyzer.set_grid(center, radius)
