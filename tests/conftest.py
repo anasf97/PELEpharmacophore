@@ -1,28 +1,36 @@
 import os
 import pytest
-import PELEpharmacophore.analysis.simulation_analyzer as sa
+import PELEpharmacophore.analysis.grid_analyzer as ga
+import PELEpharmacophore.analysis.meanshift_analyzer as ma
+
 
 
 DIR = os.path.dirname(__file__)
-SIMULATION_1 = os.path.join(DIR, "data/simulation_1")
-TRAJECTORY_1 = os.path.join(DIR, "data/simulation_1/output/0/trajectory_1.pdb")
+SIMULATION = os.path.join(DIR, "data/simulation_1")
+TRAJECTORY = os.path.join(DIR, "data/simulation_1/output/0/trajectory_1.pdb")
 
-CHAIN_1, RESNAME_1, RESNUM_1 = "L", "SB2", 800
+CHAIN, RESNAME, RESNUM = "L", "SB2", 800
 
-CENTER_1=[2.173, 15.561, 28.257]
-RADIUS_1=7
+CENTER=[2.173, 15.561, 28.257]
+RADIUS=7
 
-FEATURES_1 = {'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
+FEATURES = {'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
 
 
 @pytest.fixture
-def simulation_analyzer_1():
-    s = sa.SimulationAnalyzer(SIMULATION_1)
-    s.set_ligand(CHAIN_1, RESNAME_1, RESNUM_1)
-    s.set_features(FEATURES_1)
-    s.set_grid(CENTER_1, RADIUS_1)
-    return s
+def grid_analyzer():
+    a = ga.GridAnalyzer(SIMULATION)
+    a.set_ligand(CHAIN, RESNAME, RESNUM)
+    a.set_features(FEATURES)
+    a.set_grid(CENTER, RADIUS)
+    return a
 
+@pytest.fixture
+def meanshift_analyzer():
+    a = ma.MeanshiftAnalyzer(SIMULATION)
+    a.set_ligand(CHAIN, RESNAME, RESNUM)
+    a.set_features(FEATURES)
+    return a
 
 @pytest.fixture
 def atom_ids():
