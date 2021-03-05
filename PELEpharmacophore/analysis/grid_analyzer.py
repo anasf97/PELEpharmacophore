@@ -194,13 +194,14 @@ class GridAnalyzer(sa.SimulationAnalyzer):
                             f.write(hl.format_line_pdb(voxel.center, feature, freq, feature_origin))
 
 if __name__ == "__main__":
-    target = GridAnalizer("tests/data/simulation_1")
+    target = GridAnalyzer("/gpfs/scratch/bsc72/bsc72801/ana_sanchez/test1_frag82")
     #target = GridAnalizer("PELEpharmacophore/1/")
-    target.set_ligand("L", "SB2", 800)
-    features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
+    target.set_ligand("L", "FRA", 900)
+    #features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
     #features={'NEG': ['C2'], 'ALI': ['C1']}
+    features = {'ARO':['C5']}
     target.set_features(features)
     target.set_grid((2.173, 15.561, 28.257), 7)
-    target.run(5)
+    target.run(23)
     target.set_frequency_filter(0)
-    target.save_pharmacophores()
+    target.save_pharmacophores("PharmacophoresTest1_frag82")

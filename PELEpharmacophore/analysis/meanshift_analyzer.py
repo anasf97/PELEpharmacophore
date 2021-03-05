@@ -119,11 +119,11 @@ class Cluster(object):
         self.center = center
 
 if __name__ == "__main__":
-    target = MeanshiftAnalyzer("tests/data/simulation_1")
-    target.set_ligand("L", "SB2", 800)
-    features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
-    #features={'NEG': ['C2'], 'ALI': ['C1']}
+    target = MeanshiftAnalyzer("/gpfs/scratch/bsc72/bsc72801/ana_sanchez/test5")
+    target.set_ligand("L", "FRA", 900)
+    #features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
+    features={'NEG': ['C2'], 'ALI': ['C1']}
     target.set_features(features)
-    target.run(1)
-    target.set_frequency_filter(1)
-    target.save_pharmacophores()
+    target.run(20)
+    target.set_frequency_filter(0)
+    target.save_pharmacophores("PharmacophoresTest5_ms")

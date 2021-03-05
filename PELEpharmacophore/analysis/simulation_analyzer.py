@@ -143,7 +143,7 @@ class Atom:
     def get_origin(self):
         if self.origin is None:
             trajectory = hl.basename_without_extension(self.atom.get_full_id()[0])
-            match = re.search("trajectory_(\d)*", trajectory)
+            match = re.search("trajectory_(\d+)*", trajectory)
             trajectory = int(match.group(1))
             model = self.atom.get_full_id()[1]
             self.origin = (trajectory, model)
