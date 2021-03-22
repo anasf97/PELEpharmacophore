@@ -3,6 +3,7 @@
 #SBATCH --output=${system}.out
 #SBATCH --error=${system}.err
 #SBATCH --ntasks=$ncpus
+#SBATCH --qos=debug
 
 module purge
 export PELE="${pele_path}"

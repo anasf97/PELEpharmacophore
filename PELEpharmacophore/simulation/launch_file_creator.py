@@ -42,7 +42,8 @@ class LaunchFileCreator(object):
         return {"system" : system,
                 "chain" : ligchain,
                 "resname" : ligname,
-                "working_folder" : working_folder
+                "working_folder" : working_folder,
+                "test" : "true"
                 }
 
     def slurm_args(self, system, system_yml, ncpus):

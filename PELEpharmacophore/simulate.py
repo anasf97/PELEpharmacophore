@@ -16,9 +16,10 @@ def parse_args():
     return args.input_file
 
 def simulate(target, ligand, center):
-    docking = dk.GlideDocking(target, ligand, center)
-    docking.run()
-    launch_file_creator = lf.LaunchFileCreator(docking.final_dir)
+    #docking = dk.GlideDocking(target, ligand, center)
+    #docking.run()
+    #launch_file_creator = lf.LaunchFileCreator(docking.final_dir)
+    launch_file_creator = lf.LaunchFileCreator("subset/systems")
     sr.SimulationRunner(launch_file_creator.slurm_outdir)
 
 def main(input_yaml):
