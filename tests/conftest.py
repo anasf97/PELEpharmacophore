@@ -1,5 +1,6 @@
 import os
 import pytest
+import numpy as np
 import PELEpharmacophore.analysis.grid_analyzer as ga
 import PELEpharmacophore.analysis.meanshift_analyzer as ma
 
@@ -14,7 +15,7 @@ CHAIN, RESNAME, RESNUM = "L", "SB2", 800
 CENTER=[2.173, 15.561, 28.257]
 RADIUS=7
 
-FEATURES = {'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
+FEATURES =  {'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': [('CA1', 'CA4'), ('CD1', 'CD4'), ('CC4', 'CC5', 'CC2')]}
 
 
 @pytest.fixture
@@ -33,10 +34,10 @@ def meanshift_analyzer():
     return a
 
 @pytest.fixture
-def atom_ids():
-    def _atom_ids(atoms):
-        return [a.atom.id for a in atoms]
-    return _atom_ids
+def atom_coords():
+    def _atom_coords(atoms):
+        return np.array([a.coordinates() for a in atoms])
+    return _atom_coords
 
 
 @pytest.fixture

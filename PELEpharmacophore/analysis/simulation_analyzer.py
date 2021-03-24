@@ -101,16 +101,16 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         featured_grid_atoms : list of Atom objects
         """
         featured_atoms = []
-        atoms = []
         for feature, atomlist in self.features.items():
-            for atom in atomlist:
-                bio_atom = model[self.chain][(f"H_{self.resname}", self.resnum, " ")][atom]
-                atoms.append(bio_atom)
+            for atoms in atomlist:
+                if isinstance(atoms, tuple):
+                    at = tuple(model[self.chain][(f"H_{self.resname}", self.resnum, " ")][a] for a in atoms)
+                else:
+                    at = model[self.chain][(f"H_{self.resname}", self.resnum, " ")][atoms]
 
-                a = Atom(bio_atom)
-                a.set_feature(feature)
-                featured_atoms.append(a)
-        return atoms, featured_atoms
+                f = Feature(at, feature)
+                featured_atoms.append(f)
+        return featured_atoms
 
 
     @abc.abstractmethod
@@ -128,23 +128,59 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         pass
 
 
-class Atom:
+class Feature:
 
-    def __init__(self, atom):
-        self.atom = atom
-        self.origin = None
-
-    def set_feature(self, feature):
+    def __init__(self, atoms, feature):
+        self.atoms = atoms
         self.feature = feature
 
-    def get_feature(self):
-        return self.feature
+        self.retrieve_origin()
 
-    def get_origin(self):
-        if self.origin is None:
-            trajectory = hl.basename_without_extension(self.atom.get_full_id()[0])
-            match = re.search("trajectory_(\d+)*", trajectory)
-            trajectory = int(match.group(1))
-            model = self.atom.get_full_id()[1]
-            self.origin = (trajectory, model)
-        return self.origin
+    @property
+    def atoms(self):
+        return self._atoms
+
+    @atoms.setter
+    def atoms(self, atoms):
+        if isinstance(atoms, tuple):
+            self._atoms = atoms
+        else:
+            self._atoms = tuple([atoms])
+
+    @property
+    def feature(self):
+        return self._feature
+
+    @feature.setter
+    def feature(self, feature):
+        self._feature = feature
+
+    @property
+    def origin(self):
+        return self._origin
+
+    @origin.setter
+    def origin(self, trajectory_model):
+        self._origin = trajectory_model
+
+    def retrieve_origin(self):
+        atoms = self.atoms
+        trajectory = hl.basename_without_extension(atoms[0].get_full_id()[0])
+        match = re.search("trajectory_(\d+)*", trajectory)
+        trajectory = int(match.group(1))
+        model = atoms[0].get_full_id()[1]
+        self.origin = (trajectory, model)
+
+    def coordinates(self):
+        atoms = self.atoms
+        if len(atoms) == 1:
+            return atoms[0].get_coord()
+        if len(atoms) == 2:
+            point1, point2 = (a.get_coord() for a in atoms)
+            center = hl.midpoint(point1, point2)
+            return center
+        if len(atoms) == 3:
+            point1, point2, point3 = (a.get_coord() for a in atoms)
+            point4 = hl.midpoint(point1, point2)
+            center = hl.midpoint(point3, point4)
+            return center

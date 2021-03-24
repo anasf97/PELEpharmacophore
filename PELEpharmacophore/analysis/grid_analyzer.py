@@ -41,11 +41,10 @@ class GridAnalyzer(sa.SimulationAnalyzer):
             Atoms inside the grid.
         """
         dist = np.sqrt(3)*self.grid.radius #get dist from center to vertex
-        atoms, featured_atoms = self.get_atoms(model)
-        atoms_near = hl.neighbor_search(atoms, self.grid.center, dist)
-        grid_atoms = [a for a in atoms_near if hl.inside_grid(a, self.grid.v1, self.grid.v8)]
-        featured_grid_atoms = [fa for fa in featured_atoms if fa.atom in grid_atoms ]
-        return featured_grid_atoms
+        featured_atoms = self.get_atoms(model)
+        atoms_near = hl.neighbor_search(featured_atoms, self.grid.center, dist)
+        grid_atoms = [a for a in atoms_near if hl.inside_grid(a.coordinates(), self.grid.v1, self.grid.v8)]
+        return grid_atoms
 
 
     def check_voxels(self, grid_atoms):
@@ -64,13 +63,13 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         """
         model_grid = copy.deepcopy(self.grid)
         voxel_centers = np.array([v.center for v in model_grid.voxels])
-        atom_coords = np.array([a.atom.get_coord() for a in grid_atoms])
+        atom_coords = np.array([a.coordinates() for a in grid_atoms])
         dist = distance.cdist(atom_coords, voxel_centers, 'euclidean')
         min = dist.argmin(axis=1) #get index of closest voxel to each atom
         voxel_dict = {}
         for i, atom in enumerate(grid_atoms):
-            feature = atom.get_feature()
-            origin = atom.get_origin()
+            feature = atom.feature
+            origin = atom.origin
             voxel = min[i]
             model_grid.voxels[voxel].count_feature(feature) # add feature of the atom inside the voxel
             model_grid.voxels[voxel].add_origin(feature, origin) # add origin of the atom inside the voxel

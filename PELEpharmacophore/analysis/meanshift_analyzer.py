@@ -31,7 +31,7 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
         all_featured_atoms = []
         for step in accepted_steps:
             model = trajectory[step]
-            atoms, featured_atoms = self.get_atoms(model)
+            featured_atoms = self.get_atoms(model)
             [all_featured_atoms.append(fa) for fa in featured_atoms]
         return all_featured_atoms
 
@@ -50,7 +50,7 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
         estimator = MeanShift(bandwidth=1, n_jobs=ncpus, cluster_all=True)
         atom_dict ={}
         for atom in featured_atoms:
-            atom_dict = hl.list_dict(atom_dict, atom.get_feature(), atom.atom.get_coord())
+            atom_dict = hl.list_dict(atom_dict, atom.feature, atom.coordinates())
 
         self.cluster_dict={}
         for feature, coords in atom_dict.items():
@@ -81,10 +81,8 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
         self.threshold_dict = {}
         for feature, clusters in self.cluster_dict.items():
             freqlist = [c.frequency for c in clusters]
-            print(feature, freqlist)
             hist, bin_edges = np.histogram(freqlist)
             self.threshold_dict[feature] = bin_edges[threshold]
-        print(self.threshold_dict)
         return self.threshold_dict
 
     def save_pharmacophores(self, outdir="Pharmacophores_ms"):
