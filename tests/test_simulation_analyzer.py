@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import shutil
 import pytest
 
@@ -7,19 +8,30 @@ SIMULATION_1 = os.path.join(DIR, "data/simulation_1")
 TRAJECTORY_1 = os.path.join(DIR, "data/simulation_1/output/0/trajectory_1.pdb")
 
 
-EXPECTED_IDS = ['NC1', 'NB1', 'NC3', 'O2', 'FD3', 'C1', 'CA5', 'CD1']
+EXPECTED_COORDS = [
+                   [ 1.396, 14.473, 28.174],
+                   [ 0.499,  9.416, 28.725],
+                   [ 8.342, 11.331, 29.886],
+                   [ 5.928, 12.535, 29.302],
+                   [ 2.487, 14.577, 28.419],
+                   [ 1.666, 22.194, 28.48 ],
+                   [ 1.363, 18.291, 27.817],
+                   [-0.923, 21.511, 27.99 ],
+                   [ 3.414, 15.216, 28.589]
+                  ]
 
-def test_get_grid_atoms(grid_analyzer, atom_ids, trajectory=TRAJECTORY_1, expected_ids=EXPECTED_IDS):
+def test_get_grid_atoms(grid_analyzer, atom_coords, trajectory=TRAJECTORY_1, expected_coords=EXPECTED_COORDS):
     sa = grid_analyzer
     str = sa.get_structure(trajectory)
 
     grid_atoms = sa.get_grid_atoms(str[0])
+    expected_coords = np.array([np.array(lst) for lst in expected_coords])
 
-    assert atom_ids(grid_atoms) == expected_ids
+    assert atom_coords(grid_atoms).all() == expected_coords.all()
 
 
 
-EXPECTED_VOXELS_CV = [77, 582, 932, 1070, 1295, 1868, 2400, 2639]
+EXPECTED_VOXELS_CV = [77, 582, 736, 1070, 1281, 1295, 1854, 2400, 2639]
 
 def test_check_voxels(grid_analyzer, active_voxels, trajectory=TRAJECTORY_1, expected_voxels=EXPECTED_VOXELS_CV):
     sa = grid_analyzer
@@ -32,7 +44,7 @@ def test_check_voxels(grid_analyzer, active_voxels, trajectory=TRAJECTORY_1, exp
 
 
 
-EXPECTED_VOXELS_MG = [77, 582, 720, 932, 1070, 1267, 1295, 1646, 1868, 2400, 2414, 2626, 2639]
+EXPECTED_VOXELS_MG = [77, 582, 736, 931, 1070, 1267, 1281, 1295, 1842, 1854, 2400, 2414, 2626, 2639]
 
 def test_merge_grids(grid_analyzer, active_voxels, trajectory=TRAJECTORY_1, expected_voxels=EXPECTED_VOXELS_MG):
     sa = grid_analyzer
@@ -50,7 +62,7 @@ def test_merge_grids(grid_analyzer, active_voxels, trajectory=TRAJECTORY_1, expe
 
 
 
-EXPECTED_VOXELS_AT = [77, 582, 720, 932, 1070, 1267, 1295, 1646, 1868, 2400, 2414, 2626, 2639]
+EXPECTED_VOXELS_AT = [77, 582, 736, 931, 1070, 1267, 1281, 1295, 1842, 1854, 2400, 2414, 2626, 2639]
 
 def test_analyze_trajectory_grid(grid_analyzer, active_voxels, expected_voxels=EXPECTED_VOXELS_AT):
     sa = grid_analyzer
@@ -61,7 +73,7 @@ def test_analyze_trajectory_grid(grid_analyzer, active_voxels, expected_voxels=E
 
 
 
-EXPECTED_DICT = {'HBA': 1.1, 'ALI': 1.1, 'ARO': 0.6, 'HBD': 0.6}
+EXPECTED_DICT = {'HBA': 1.1, 'ALI': 1.1, 'ARO': 1.1, 'HBD': 0.6}
 
 def test_set_frequency_filter_grid(grid_analyzer, expected_dict=EXPECTED_DICT):
     sa = grid_analyzer
@@ -91,7 +103,29 @@ def test_save_pharmacophores_grid(grid_analyzer, compare_files, expected_pharmac
 
 
 
-EXPECTED_DICT_MS = {'HBD': 3.6, 'HBA': 2.2, 'ALI': 2.2, 'ARO': 1.6}
+EXPECTED_COORDS_MS = [
+                       [ 1.396, 14.473, 28.174],
+                       [ 0.499,  9.416, 28.725],
+                       [ 8.342, 11.331, 29.886],
+                       [ 5.928, 12.535, 29.302],
+                       [ 2.487, 14.577, 28.419],
+                       [ 1.666, 22.194, 28.48 ],
+                       [ 1.363, 18.291, 27.817],
+                       [-0.923, 21.511, 27.99 ],
+                       [ 3.414, 15.216, 28.589]
+                     ]
+
+def test_analyze_trajectory_meanshift(meanshift_analyzer, atom_coords, expected_coords=EXPECTED_COORDS_MS):
+    sa = meanshift_analyzer
+
+    featured_atoms = sa.analyze_trajectory(sa.traj_and_reports[0])
+    expected_coords = np.array([np.array(lst) for lst in expected_coords])
+
+    assert atom_coords(featured_atoms).all() == expected_coords.all()
+
+
+
+EXPECTED_DICT_MS = {'HBD': 3.6, 'HBA': 2.2, 'ALI': 2.2, 'ARO': 2.2}
 
 def test_set_frequency_filter_meanshift(meanshift_analyzer, active_voxels, expected_dict=EXPECTED_DICT_MS):
     sa = meanshift_analyzer
@@ -100,18 +134,6 @@ def test_set_frequency_filter_meanshift(meanshift_analyzer, active_voxels, expec
     sa.set_frequency_filter(1)
 
     assert sa.threshold_dict == expected_dict
-
-
-
-EXPECTED_IDS_MS = ['NC1', 'NB1', 'NC3', 'O2', 'FD3', 'C1', 'CA5', 'CD1', 'NC1', 'NB1', 'NC3', 'O2', 'FD3', 'C1', 'CA5', 'CD1']
-
-def test_analyze_trajectory_meanshift(meanshift_analyzer, atom_ids, expected_ids=EXPECTED_IDS_MS):
-    sa = meanshift_analyzer
-
-    featured_atoms = sa.analyze_trajectory(sa.traj_and_reports[0])
-
-    assert atom_ids(featured_atoms) == expected_ids
-
 
 
 EXPECTED_PHARMACOPHORES_PATH_MS = os.path.join(DIR, "data/pharmacophores_ms")

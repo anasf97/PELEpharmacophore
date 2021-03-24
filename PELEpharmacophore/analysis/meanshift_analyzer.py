@@ -31,7 +31,7 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
         all_featured_atoms = []
         for step in accepted_steps:
             model = trajectory[step]
-            atoms, featured_atoms = self.get_atoms(model)
+            featured_atoms = self.get_atoms(model)
             [all_featured_atoms.append(fa) for fa in featured_atoms]
         return all_featured_atoms
 
@@ -50,7 +50,7 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
         estimator = MeanShift(bandwidth=1, n_jobs=ncpus, cluster_all=True)
         atom_dict ={}
         for atom in featured_atoms:
-            atom_dict = hl.list_dict(atom_dict, atom.get_feature(), atom.atom.get_coord())
+            atom_dict = hl.list_dict(atom_dict, atom.feature, atom.coordinates())
 
         self.cluster_dict={}
         for feature, coords in atom_dict.items():
@@ -81,10 +81,8 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
         self.threshold_dict = {}
         for feature, clusters in self.cluster_dict.items():
             freqlist = [c.frequency for c in clusters]
-            print(feature, freqlist)
             hist, bin_edges = np.histogram(freqlist)
             self.threshold_dict[feature] = bin_edges[threshold]
-        print(self.threshold_dict)
         return self.threshold_dict
 
     def save_pharmacophores(self, outdir="Pharmacophores_ms"):
@@ -119,11 +117,22 @@ class Cluster(object):
         self.center = center
 
 if __name__ == "__main__":
-    target = MeanshiftAnalyzer("/gpfs/scratch/bsc72/bsc72801/ana_sanchez/test5")
-    target.set_ligand("L", "FRA", 900)
-    #features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
-    features={'NEG': ['C2'], 'ALI': ['C1']}
+    # target = MeanshiftAnalyzer("/gpfs/scratch/bsc72/bsc72801/ana_sanchez/test5")
+    # target.set_ligand("L", "FRA", 900)
+    # #features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
+    # features={'NEG': ['C2'], 'ALI': ['C1']}
+    # target.set_features(features)
+    # target.run(20)
+    # target.set_frequency_filter(0)
+    # target.save_pharmacophores("PharmacophoresTest5_ms")
+
+    target = MeanshiftAnalyzer("../tests/data/simulation_1")
+    target.set_ligand("L", "SB2", 800)
+    features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': [('CA1', 'CA4'), ('CD1', 'CD4'), ('CC4', 'CC5', 'CC2')]}
     target.set_features(features)
-    target.run(20)
-    target.set_frequency_filter(0)
-    target.save_pharmacophores("PharmacophoresTest5_ms")
+    featured_atoms = target.analyze_trajectory(target.traj_and_reports[0])
+    print([a.coordinates() for a in featured_atoms])
+    target.run(1)
+
+    td = target.set_frequency_filter(1)
+    print(td)
