@@ -193,55 +193,14 @@ class GridAnalyzer(sa.SimulationAnalyzer):
                             f.write(hl.format_line_pdb(voxel.center, feature, freq, feature_origin))
 
 if __name__ == "__main__":
-    # target = GridAnalyzer("/gpfs/scratch/bsc72/bsc72801/ana_sanchez/test1_frag82")
-    # #target = GridAnalizer("PELEpharmacophore/1/")
-    # target.set_ligand("L", "FRA", 900)
-    # #features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
-    # #features={'NEG': ['C2'], 'ALI': ['C1']}
-    # features = {'ARO':['C5']}
-    # target.set_features(features)
-    # target.set_grid((2.173, 15.561, 28.257), 7)
-    # target.run(23)
-    # target.set_frequency_filter(0)
-    # target.save_pharmacophores("PharmacophoresTest1_frag82")
-
-
-    target = GridAnalyzer("../tests/data/simulation_1")
-    target.set_ligand("L", "SB2", 800)
-    features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': [('CA1', 'CA4'), ('CD1', 'CD4'), ('CC4', 'CC5', 'CC2')]}
+    target = GridAnalyzer("/gpfs/scratch/bsc72/bsc72801/ana_sanchez/test1_frag82")
+    #target = GridAnalizer("PELEpharmacophore/1/")
+    target.set_ligand("L", "FRA", 900)
+    #features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
     #features={'NEG': ['C2'], 'ALI': ['C1']}
+    features = {'ARO':['C5']}
     target.set_features(features)
     target.set_grid((2.173, 15.561, 28.257), 7)
-    model = target.get_structure("../tests/data/simulation_1/output/0/trajectory_1.pdb")
-    grid_atoms1 = target.get_grid_atoms(model[0])
-    grid_atoms2 = target.get_grid_atoms(model[1])
-    # print(grid_atoms1)
-    # print(grid_atoms2)
-    # print(len(grid_atoms1))
-    # print(len(grid_atoms2))
-    try:
-        print([a.atoms.id for a in grid_atoms1])
-    except:
-        pass
-    print([a.coordinates() for a in grid_atoms1])
-    # print([a.atom.id for a in grid_atoms2])
-    grid1 = target.check_voxels(grid_atoms1)
-    grid2 = target.check_voxels(grid_atoms2)
-    # for i, v in enumerate(grid1.voxels):
-    #     if v.freq_dict: print(i, v.freq_dict)
-    # for i, v in enumerate(grid1.voxels):
-    #     if v.freq_dict: print(i, v.center)
-
-    # for i, v in enumerate(grid2.voxels):
-    #     if v.freq_dict: print(i)
-    # final_grid = target.merge_grids(grid1, grid2)
-    # for i, v in enumerate(final_grid.voxels):
-    #     if v.freq_dict: print(i)
-    target.grid = target.analyze_trajectory(target.traj_and_reports[0])
-    # for i, v in enumerate(target.grid.voxels):
-    #   if v.freq_dict: print(i, v.freq_dict)
-
-    td = target.set_frequency_filter(1)
-    print([i for i, v in enumerate(target.grid.voxels) if v.freq_dict])
-    print(td)
-    # target.save_pharmacophores("Result")
+    target.run(23)
+    target.set_frequency_filter(0)
+    target.save_pharmacophores("PharmacophoresTest1_frag82")
