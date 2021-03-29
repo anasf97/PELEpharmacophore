@@ -213,6 +213,6 @@ fragment_features = {
 
                      "frag106": {'HBD':['H4'],  'HBA' : ['O1', 'O2'],  'ALI': ['C1', 'C2']},
 
-                     "frag107": {'HBD':['H3', 'H4'],  'HBA' : ['O1', 'O2'],  'ALI': ['C3']}
+                     "frag107": {'POS':['N1'], 'NEG':['C2', 'C4'], 'ALI': ['C1']}
 
                     }
