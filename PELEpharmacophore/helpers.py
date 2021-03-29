@@ -70,15 +70,16 @@ def accepted_pele_steps(report):
             accepted_steps = [int(value) for value in column[1:]]
     return accepted_steps
 
+
 def parallelize(func, iterable, n_workers, **kwargs):
     f = partial(func, **kwargs)
     if n_workers > 1:
-        pool = Pool(n_workers)
-        return pool.map(f, iterable)
-        pool.close()
-        pool.join()
+        with Pool(n_workers) as p:
+            output = pool.map(f, iterable)
     else:
-        return list(map(f, iterable))
+        output = list(map(f, iterable))
+        
+    return output
 
 def midpoint(point, other_point):
     x, y, z = point
