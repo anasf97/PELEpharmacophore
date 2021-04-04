@@ -37,7 +37,7 @@ fragment_features = {
 
                      "frag18":  {'HBD':['H6', 'H7'], 'HBA':['O1'], 'ARO': [('C1', 'C4')]},
 
-                     "frag19":  {'HBA':['O1'], ALI' : ['C7'], 'ARO': [('C1', 'C4')]},
+                     "frag19":  {'HBA':['O1'], 'ALI' : ['C7'], 'ARO': [('C1', 'C4')]},
 
                      "frag20":  {'HBD':['H6', 'H7'], 'HBA':['O1', 'O2'], 'ARO': [('C1', 'C4')]},
 

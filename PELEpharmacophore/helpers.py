@@ -1,11 +1,23 @@
 import os
 import numpy as np
+import mdtraj as md
 from multiprocessing import Pool
 from functools import partial
 from sklearn.neighbors import KDTree
 from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.NeighborSearch import NeighborSearch
 
+def load_topology(file):
+    return md.load(file).topology
+
+def get_indices(topology, resname, atomlist):
+    atomnames = " ".join(atomlist)
+    query = f"resname {resname} and \
+                  name {atomnames}"
+    return topology.select(query)
+
+def load_trajectory(file, indices):
+    return md.load(file, atom_indices=indices)
 
 def read_pdb(file):
     parser = PDBParser()
@@ -18,13 +30,12 @@ def neighbor_search_biopython(atom_list, center, distance):
     atoms_near = neighbor_search.search(center, distance, 'A')
     return atoms_near
 
-def neighbor_search(atom_list, center, dist):
-    coordinates = np.array([f.coordinates() for f in atom_list])
+def neighbor_search(coordinates, center, dist):
     center = np.array(center).reshape(1, 3)
     tree = KDTree(coordinates, leaf_size=3)
-    ind = tree.query_radius(center, r=dist)
-    ind = list(ind[0])
-    atoms_near = [atom_list[i] for i in ind]
+    result = tree.query_radius(center, r=dist)
+    ind = result[0]
+    atoms_near = coordinates[ind]
     return atoms_near
 
 def format_line_pdb(coords, atomname, bfact, models = None, atomnum = "1", resname="UNK", chain="A", resnum="1", occ=1.00):
@@ -57,6 +68,18 @@ def list_dict(dict_, key, value):
     dict_.setdefault(key, []).append(value)
     return dict_
 
+
+def merge_array_dicts(*dicts):
+    merged_dict = {}
+    union_keys = set().union(*dicts)
+
+    for key in union_keys:
+        lst = [i for i, d in enumerate(dicts) if key in d]
+        merged_dict[key] = np.vstack([dicts[i][key] for i in lst])
+
+    return merged_dict
+
+
 def custom_path(dir, custom_var, string, ext):
     return os.path.join(dir, f"{custom_var}{string}{ext}")
 
@@ -75,11 +98,10 @@ def parallelize(func, iterable, n_workers, **kwargs):
     f = partial(func, **kwargs)
     if n_workers > 1:
         with Pool(n_workers) as p:
-            output = pool.map(f, iterable)
+            return pool.map(f, iterable)
     else:
-        output = list(map(f, iterable))
-        
-    return output
+        return list(map(f, iterable))
+
 
 def midpoint(point, other_point):
     x, y, z = point

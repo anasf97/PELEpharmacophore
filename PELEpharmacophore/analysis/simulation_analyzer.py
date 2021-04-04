@@ -2,6 +2,7 @@ import os
 import abc
 import re
 import glob
+import numpy as np
 import PELEpharmacophore.helpers as hl
 
 class SimulationAnalyzer(metaclass=abc.ABCMeta):
@@ -18,9 +19,10 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         indir : str
              Name of the simulation directory.
         """
-        self.result_dir = f"{indir}/output/0"
-        self.trajectories = glob.glob(os.path.join(self.result_dir, "trajectory_*.pdb"))
-        self.reports = glob.glob(os.path.join(self.result_dir, "report_*"))
+        self.result_dir = f"{indir}/output/"
+        self.topology = os.path.join(self.result_dir, "topologies", "topology_0.pdb")
+        self.trajectories = glob.glob(os.path.join(self.result_dir, "0",  "trajectory_*.pdb"))
+        self.reports = glob.glob(os.path.join(self.result_dir, "0", "report_*"))
         self.match_traj_and_report()
         self.chain = None
 
@@ -69,7 +71,7 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         self.features = features
 
 
-    def get_structure(self, file):
+    def get_topology(self, file):
         """
         Parses a PDB file and returns a structure object.
 
@@ -83,11 +85,11 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         structure : Bio.PDB.Structure
             Biopython structure object.
         """
-        structure = hl.read_pdb(file)
-        return structure
+        self.topology = hl.load_topology(file)
 
 
-    def get_atoms(self, model):
+
+    def get_indices(self, resname = "FRA"):
         """
         Gets all atoms defined in the `features` attribute.
 
@@ -100,17 +102,25 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         ----------
         featured_grid_atoms : list of Atom objects
         """
-        featured_atoms = []
-        for feature, atomlist in self.features.items():
-            for atoms in atomlist:
-                if isinstance(atoms, tuple):
-                    at = tuple(model[self.chain][(f"H_{self.resname}", self.resnum, " ")][a] for a in atoms)
-                else:
-                    at = model[self.chain][(f"H_{self.resname}", self.resnum, " ")][atoms]
+        indices_dict = {}
+        indices_list = np.array([])
 
-                f = Feature(at, feature)
-                featured_atoms.append(f)
-        return featured_atoms
+        for feature, atomlist in self.features.items():
+            indices = hl.get_indices(self.topology, resname, atomlist)
+            indices_dict[feature] = indices
+            indices_list = np.append(indices_list, indices)
+        return indices
+
+    def get_coordinates(self, trajectory, indices):
+        traj = hl.load_trajectory(trajectory, indices)
+
+        coord_dict = {}
+        start = 0
+        for feature, indices in indices_dict.items():
+            stop = counter + len(indices)
+            coord_dict[feature] = traj.xyz[:, start:stop, :]
+            start += len(indices)
+        return coord_dict
 
 
     @abc.abstractmethod

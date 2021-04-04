@@ -2,6 +2,7 @@ import os
 import copy
 import numpy as np
 from scipy.spatial import distance
+from functools import reduce
 import PELEpharmacophore.helpers as hl
 import PELEpharmacophore.analysis.grid as gr
 import PELEpharmacophore.analysis.simulation_analyzer as sa
@@ -26,7 +27,7 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         self.grid.generate_voxels()
 
 
-    def get_grid_atoms(self, model):
+    def get_grid_atoms(self, coords):
         """
         Gets all the atoms inside the grid for a given model.
 
@@ -41,13 +42,13 @@ class GridAnalyzer(sa.SimulationAnalyzer):
             Atoms inside the grid.
         """
         dist = np.sqrt(3)*self.grid.radius #get dist from center to vertex
-        featured_atoms = self.get_atoms(model)
-        atoms_near = hl.neighbor_search(featured_atoms, self.grid.center, dist)
-        grid_atoms = [a for a in atoms_near if hl.inside_grid(a.coordinates(), self.grid.v1, self.grid.v8)]
+        atoms_near = hl.neighbor_search(coordinates, self.grid.center, dist)
+        inside_grid_mask = np.logical_and(self.grid.v1 <= a, a <=  self.grid.v8).all(axis=1)
+        grid_atoms = coords[inside_grid_mask]
         return grid_atoms
 
 
-    def check_voxels(self, grid_atoms):
+    def check_voxels(self, coords):
         """
         Check which atoms are inside which voxel of the grid.
 
@@ -63,17 +64,15 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         """
         model_grid = copy.deepcopy(self.grid)
         voxel_centers = np.array([v.center for v in model_grid.voxels])
-        atom_coords = np.array([a.coordinates() for a in grid_atoms])
-        dist = distance.cdist(atom_coords, voxel_centers, 'euclidean')
-        min = dist.argmin(axis=1) #get index of closest voxel to each atom
-        voxel_dict = {}
-        for i, atom in enumerate(grid_atoms):
-            feature = atom.feature
-            origin = atom.origin
-            voxel = min[i]
-            model_grid.voxels[voxel].count_feature(feature) # add feature of the atom inside the voxel
-            model_grid.voxels[voxel].add_origin(feature, origin) # add origin of the atom inside the voxel
-        return model_grid
+        dist = distance.cdist(coords, voxel_centers, 'sqeuclidean')
+        voxel_inds = dist.argmin(axis=1) #get index of closest voxel to each atom
+        return voxel_inds
+
+
+    def fill_grid(self, feature, voxel_inds):
+        for i in voxel_inds:
+            self.grid.voxels[voxel].count_feature(feature)
+
 
     def merge_grids(self, grid, other_grid):
         """
@@ -141,10 +140,22 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         ncpus : int
             Number of processors.
         """
-        traj_grids = hl.parallelize(self.analyze_trajectory, self.traj_and_reports, ncpus)
+        indices = self.get_indices()
 
-        for traj_grid in traj_grids:
-            self.grid = self.merge_grids(self.grid, traj_grid)
+        coord_dicts = hl.parallelize(self.get_coordinates, trajectory, indices, ncpus)
+
+        merged_coord_dict = hl.merge_array_dicts(*coord_dicts)
+
+        grid_atoms_dict = {}
+        for feature, coords in merged_coord_dict:
+            grid_atoms_dict[feature] = self.get_grid_atoms(coords)
+
+        voxel_ind_dict = {}
+        for feature, coords in grid_atoms_dict:
+            voxel_ind_dict[feature] = self.check_voxels(coords)
+
+        for feature, inds in voxel_ind_dict:
+            self.fill_grid(feature, inds)
 
     def set_frequency_filter(self, threshold):
         """
