@@ -111,6 +111,7 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
             indices_list = np.append(indices_list, indices)
         return indices
 
+    @staticmethod
     def get_coordinates(self, trajectory, indices):
         traj = hl.load_trajectory(trajectory, indices)
 

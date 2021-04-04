@@ -142,7 +142,7 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         """
         indices = self.get_indices()
 
-        coord_dicts = hl.parallelize(self.get_coordinates, trajectory, indices, ncpus)
+        coord_dicts = hl.parallelize(self.__class__.get_coordinates, trajectory, indices, ncpus)
 
         merged_coord_dict = hl.merge_array_dicts(*coord_dicts)
 
