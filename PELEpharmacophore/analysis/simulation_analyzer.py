@@ -20,8 +20,10 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
              Name of the simulation directory.
         """
         self.result_dir = f"{indir}/output/"
-        self.topology = os.path.join(self.result_dir, "topologies", "topology_0.pdb")
+        self.top_file = os.path.join(self.result_dir, "topologies", "topology_0.pdb")
         self.trajectories = glob.glob(os.path.join(self.result_dir, "0",  "trajectory_*.pdb"))
+        print(self.trajectories)
+        print(self.top_file)
         self.reports = glob.glob(os.path.join(self.result_dir, "0", "report_*"))
         self.match_traj_and_report()
         self.chain = None
@@ -85,11 +87,11 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         structure : Bio.PDB.Structure
             Biopython structure object.
         """
-        self.topology = hl.load_topology(file)
+        return hl.load_topology(file)
 
 
 
-    def get_indices(self, resname = "FRA"):
+    def get_indices(self, topology, resname):
         """
         Gets all atoms defined in the `features` attribute.
 
@@ -103,31 +105,29 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         featured_grid_atoms : list of Atom objects
         """
         indices_dict = {}
-        indices_list = np.array([])
 
         for feature, atomlist in self.features.items():
-            indices = hl.get_indices(self.topology, resname, atomlist)
+            indices = hl.get_indices(topology, resname, atomlist)
             indices_dict[feature] = indices
-            indices_list = np.append(indices_list, indices)
-        return indices
+        return indices_dict
 
     @staticmethod
-    def get_coordinates(self, trajectory, indices):
-        traj = hl.load_trajectory(trajectory, indices)
+    def get_coordinates(traj_and_report, indices_dict):
+        trajfile, report = traj_and_report
+        indices = np.concatenate([i for i in indices_dict.values()])
+        accepted_steps = hl.accepted_pele_steps(report)
+
+        traj = hl.load_trajectory(trajfile, indices)
+        coords = traj.xyz *10  # coord units from nm to A
+        coords = coords[accepted_steps] # duplicate rows when a step is rejected
 
         coord_dict = {}
         start = 0
         for feature, indices in indices_dict.items():
-            stop = counter + len(indices)
-            coord_dict[feature] = traj.xyz[:, start:stop, :]
+            stop = start + len(indices)
+            coord_dict[feature] = coords[:, start:stop, :].reshape(-1, 3)
             start += len(indices)
         return coord_dict
-
-
-    @abc.abstractmethod
-    def analyze_trajectory(self):
-        pass
-
 
     @abc.abstractmethod
     def run(self):

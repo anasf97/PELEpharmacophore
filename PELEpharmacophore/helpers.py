@@ -4,19 +4,18 @@ import mdtraj as md
 from multiprocessing import Pool
 from functools import partial
 from sklearn.neighbors import KDTree
-from Bio.PDB.PDBParser import PDBParser
-from Bio.PDB.NeighborSearch import NeighborSearch
+# from Bio.PDB.PDBParser import PDBParser
+# from Bio.PDB.NeighborSearch import NeighborSearch
 
 def load_topology(file):
     return md.load(file).topology
 
 def get_indices(topology, resname, atomlist):
     atomnames = " ".join(atomlist)
-    query = f"resname {resname} and \
-                  name {atomnames}"
+    query = f"resname {resname} and name {atomnames}"
     return topology.select(query)
 
-def load_trajectory(file, indices):
+def load_trajectory(file, indices=None):
     return md.load(file, atom_indices=indices)
 
 def read_pdb(file):
@@ -98,7 +97,7 @@ def parallelize(func, iterable, n_workers, **kwargs):
     f = partial(func, **kwargs)
     if n_workers > 1:
         with Pool(n_workers) as p:
-            return pool.map(f, iterable)
+            return p.map(f, iterable)
     else:
         return list(map(f, iterable))
 

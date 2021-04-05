@@ -6,7 +6,18 @@ import pytest
 DIR = os.path.dirname(__file__)
 SIMULATION_1 = os.path.join(DIR, "data/simulation_1")
 TRAJECTORY_1 = os.path.join(DIR, "data/simulation_1/output/0/trajectory_1.pdb")
+TOPOLOGY = os.path.join(DIR, "data/simulation_1/output/topologies/topology_0.pdb")
 
+EXPECTED_INDICES = {'HBD': np.array([5671]),
+                    'HBA': np.array([5656, 5665, 5673]),
+                    'ALI': np.array([5657, 5682]),
+                    'ARO': np.array([5663, 5676])}
+
+def test_get_indices(grid_analyzer, top_file=TOPOLOGY, expected_indices=EXPECTED_INDICES):
+    ga = grid_analyzer
+    topology = ga.get_topology(top_file)
+    indices = ga.get_indices(topology, ga.resname)
+    assert np.all(list(indices.values()) == list(expected_indices.values()))
 
 EXPECTED_COORDS = [
                    [ 1.396, 14.473, 28.174],
@@ -20,15 +31,14 @@ EXPECTED_COORDS = [
                    [ 3.414, 15.216, 28.589]
                   ]
 
-def test_get_grid_atoms(grid_analyzer, atom_coords, trajectory=TRAJECTORY_1, expected_coords=EXPECTED_COORDS):
+def test_grid_atoms(grid_analyzer, atom_coords, trajectory=TRAJECTORY_1, expected_coords=EXPECTED_COORDS):
     sa = grid_analyzer
-    str = sa.get_structure(trajectory)
+    topology = sa.get_topology(trajectory)
 
     grid_atoms = sa.get_grid_atoms(str[0])
     expected_coords = np.array([np.array(lst) for lst in expected_coords])
 
     assert atom_coords(grid_atoms).all() == expected_coords.all()
-
 
 
 EXPECTED_VOXELS_CV = [77, 582, 736, 1070, 1281, 1295, 1854, 2400, 2639]

@@ -42,13 +42,13 @@ class GridAnalyzer(sa.SimulationAnalyzer):
             Atoms inside the grid.
         """
         dist = np.sqrt(3)*self.grid.radius #get dist from center to vertex
-        atoms_near = hl.neighbor_search(coordinates, self.grid.center, dist)
-        inside_grid_mask = np.logical_and(self.grid.v1 <= a, a <=  self.grid.v8).all(axis=1)
+        atoms_near = hl.neighbor_search(coords, self.grid.center, dist)
+        inside_grid_mask = np.logical_and(self.grid.v1 <= atoms_near, atoms_near <=  self.grid.v8).all(axis=1)
         grid_atoms = coords[inside_grid_mask]
         return grid_atoms
 
 
-    def check_voxels(self, coords):
+    def check_voxels(self, coords, voxel_centers):
         """
         Check which atoms are inside which voxel of the grid.
 
@@ -62,8 +62,6 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         model_grid : Grid object
             Grid object that contains the given atoms in the correspondent voxels.
         """
-        model_grid = copy.deepcopy(self.grid)
-        voxel_centers = np.array([v.center for v in model_grid.voxels])
         dist = distance.cdist(coords, voxel_centers, 'sqeuclidean')
         voxel_inds = dist.argmin(axis=1) #get index of closest voxel to each atom
         return voxel_inds
@@ -71,7 +69,7 @@ class GridAnalyzer(sa.SimulationAnalyzer):
 
     def fill_grid(self, feature, voxel_inds):
         for i in voxel_inds:
-            self.grid.voxels[voxel].count_feature(feature)
+            self.grid.voxels[i].count_feature(feature)
 
 
     def merge_grids(self, grid, other_grid):
@@ -102,35 +100,6 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         return grid
 
 
-    def analyze_trajectory(self, traj_and_report):
-        """
-        Analyze a given trajectory file.
-        The analysis consist in, for each of the models in the trajectory,
-        getting the atoms inside the grid and checking the voxels.
-
-        Parameters
-        ----------
-        traj_and_report : tuple
-            Trajectory and its respective report.
-
-        Returns
-        ----------
-        traj_grid : Grid object
-            Grid that contains the atoms for all the models in the trajectory.
-        """
-        trajfile, report = traj_and_report
-        trajectory = self.get_structure(trajfile)
-        accepted_steps = hl.accepted_pele_steps(report)
-        traj_grid = copy.deepcopy(self.grid)
-        for step in accepted_steps:
-            model = trajectory[step]
-            grid_atoms = self.get_grid_atoms(model)
-            if grid_atoms:
-                model_grid = self.check_voxels(grid_atoms)
-                traj_grid = self.merge_grids(traj_grid, model_grid)
-        return traj_grid
-
-
     def run(self, ncpus):
         """
         Analyze the full simulation.
@@ -140,21 +109,30 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         ncpus : int
             Number of processors.
         """
-        indices = self.get_indices()
+        import tracemalloc
+        tracemalloc.start()
+        topology = self.get_topology(self.top_file)
 
-        coord_dicts = hl.parallelize(self.__class__.get_coordinates, trajectory, indices, ncpus)
-
+        indices_dict = self.get_indices(topology, self.resname)
+        print(indices_dict)
+        coord_dicts = hl.parallelize(self.__class__.get_coordinates, self.traj_and_reports, ncpus, indices_dict=indices_dict)
+        current, peak = tracemalloc.get_traced_memory()
+        print(f"Current memory usage is {current / 10**6}MB; Peak was {peak / 10**6}MB")
+        tracemalloc.stop()
         merged_coord_dict = hl.merge_array_dicts(*coord_dicts)
 
         grid_atoms_dict = {}
-        for feature, coords in merged_coord_dict:
+        for feature, coords in merged_coord_dict.items():
             grid_atoms_dict[feature] = self.get_grid_atoms(coords)
 
-        voxel_ind_dict = {}
-        for feature, coords in grid_atoms_dict:
-            voxel_ind_dict[feature] = self.check_voxels(coords)
+        voxel_centers = np.array([v.center for v in self.grid.voxels])
 
-        for feature, inds in voxel_ind_dict:
+        voxel_ind_dict = {}
+        for feature, coords in grid_atoms_dict.items():
+            voxel_ind_dict[feature] = self.check_voxels(coords, voxel_centers)
+        print(voxel_ind_dict)
+
+        for feature, inds in voxel_ind_dict.items():
             self.fill_grid(feature, inds)
 
     def set_frequency_filter(self, threshold):
@@ -204,14 +182,14 @@ class GridAnalyzer(sa.SimulationAnalyzer):
                             f.write(hl.format_line_pdb(voxel.center, feature, freq, feature_origin))
 
 if __name__ == "__main__":
-    target = GridAnalyzer("/gpfs/scratch/bsc72/bsc72801/ana_sanchez/test1_frag82")
+    target = GridAnalyzer("/home/ana/GitRepositories/PELEpharmacophore/tests/data/simulation_1")
     #target = GridAnalizer("PELEpharmacophore/1/")
-    target.set_ligand("L", "FRA", 900)
-    #features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
+    target.set_ligand("L", "SB2", 800)
+    features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
     #features={'NEG': ['C2'], 'ALI': ['C1']}
-    features = {'ARO':['C5']}
+    #features = {'ARO':['C5']}
     target.set_features(features)
     target.set_grid((2.173, 15.561, 28.257), 7)
-    target.run(23)
-    target.set_frequency_filter(0)
-    target.save_pharmacophores("PharmacophoresTest1_frag82")
+    target.run(2)
+    # target.set_frequency_filter(0)
+    # target.save_pharmacophores("PharmacophoresTest1_frag82")
