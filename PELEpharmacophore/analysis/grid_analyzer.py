@@ -109,20 +109,10 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         ncpus : int
             Number of processors.
         """
-        import tracemalloc
-        tracemalloc.start()
-        topology = self.get_topology(self.top_file)
-
-        indices_dict = self.get_indices(topology, self.resname)
-        print(indices_dict)
-        coord_dicts = hl.parallelize(self.__class__.get_coordinates, self.traj_and_reports, ncpus, indices_dict=indices_dict)
-        current, peak = tracemalloc.get_traced_memory()
-        print(f"Current memory usage is {current / 10**6}MB; Peak was {peak / 10**6}MB")
-        tracemalloc.stop()
-        merged_coord_dict = hl.merge_array_dicts(*coord_dicts)
+        coord_dict = super().run(ncpus)
 
         grid_atoms_dict = {}
-        for feature, coords in merged_coord_dict.items():
+        for feature, coords in coord_dict.items():
             grid_atoms_dict[feature] = self.get_grid_atoms(coords)
 
         voxel_centers = np.array([v.center for v in self.grid.voxels])
@@ -130,10 +120,10 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         voxel_ind_dict = {}
         for feature, coords in grid_atoms_dict.items():
             voxel_ind_dict[feature] = self.check_voxels(coords, voxel_centers)
-        print(voxel_ind_dict)
 
         for feature, inds in voxel_ind_dict.items():
             self.fill_grid(feature, inds)
+        print([v.freq_dict for v in self.grid.voxels])
 
     def set_frequency_filter(self, threshold):
         """
@@ -185,11 +175,12 @@ if __name__ == "__main__":
     target = GridAnalyzer("/home/ana/GitRepositories/PELEpharmacophore/tests/data/simulation_1")
     #target = GridAnalizer("PELEpharmacophore/1/")
     target.set_ligand("L", "SB2", 800)
-    features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
+    #features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
+    features =  {'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': [('CA1', 'CA4'), ('CD1', 'CD4'), ('CC4', 'CC5', 'CC2')]}
     #features={'NEG': ['C2'], 'ALI': ['C1']}
     #features = {'ARO':['C5']}
     target.set_features(features)
     target.set_grid((2.173, 15.561, 28.257), 7)
-    target.run(2)
+    target.run(1)
     # target.set_frequency_filter(0)
     # target.save_pharmacophores("PharmacophoresTest1_frag82")

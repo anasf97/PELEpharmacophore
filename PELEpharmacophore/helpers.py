@@ -10,9 +10,10 @@ from sklearn.neighbors import KDTree
 def load_topology(file):
     return md.load(file).topology
 
-def get_indices(topology, resname, atomlist):
-    atomnames = " ".join(atomlist)
-    query = f"resname {resname} and name {atomnames}"
+def get_indices(topology, resname, atoms):
+    if isinstance(atoms, list) or isinstance(atoms, tuple):
+        atoms = " ".join(atoms)
+    query = f"resname {resname} and name {atoms}"
     return topology.select(query)
 
 def load_trajectory(file, indices=None):
@@ -101,6 +102,8 @@ def parallelize(func, iterable, n_workers, **kwargs):
     else:
         return list(map(f, iterable))
 
+def centroid(coords):
+    return coords.sum(axis = 0) / len(coords)
 
 def midpoint(point, other_point):
     x, y, z = point

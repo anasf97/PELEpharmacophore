@@ -10,31 +10,6 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
     Class for analysing PELE simulations using the meanshift algorithm.
     """
 
-    def analyze_trajectory(self, traj_and_report):
-        """
-        Analyze a given trajectory file.
-        The analysis consist in, for each of the models in the trajectory,
-        getting the atoms defined in the `features` attribute.
-
-        Parameters
-        ----------
-        traj_and_report : tuple
-            Trajectory and its respective report.
-
-        Returns
-        ----------
-        all_featured_atoms : list of Atom objects
-        """
-        trajfile, report = traj_and_report
-        trajectory = self.get_structure(trajfile)
-        accepted_steps = hl.accepted_pele_steps(report)
-        all_featured_atoms = []
-        for step in accepted_steps:
-            model = trajectory[step]
-            featured_atoms = self.get_atoms(model)
-            [all_featured_atoms.append(fa) for fa in featured_atoms]
-        return all_featured_atoms
-
     def run(self, ncpus):
         """
         Analyze the full simulation.
@@ -44,16 +19,12 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
         ncpus : int
             Number of processors.
         """
-        featured_atoms = hl.parallelize(self.analyze_trajectory, self.traj_and_reports, ncpus)
-        featured_atoms = list(chain.from_iterable(featured_atoms))
+        coord_dict = super().run(ncpus)
 
         estimator = MeanShift(bandwidth=1, n_jobs=ncpus, cluster_all=True)
-        atom_dict ={}
-        for atom in featured_atoms:
-            atom_dict = hl.list_dict(atom_dict, atom.feature, atom.coordinates())
 
         self.cluster_dict={}
-        for feature, coords in atom_dict.items():
+        for feature, coords in coord_dict.items():
             results = estimator.fit_predict(coords)
             p_dict = {}
             for cluster in results:

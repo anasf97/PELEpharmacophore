@@ -3,6 +3,7 @@ import abc
 import re
 import glob
 import numpy as np
+from itertools import accumulate
 import PELEpharmacophore.helpers as hl
 
 class SimulationAnalyzer(metaclass=abc.ABCMeta):
@@ -107,14 +108,20 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         indices_dict = {}
 
         for feature, atomlist in self.features.items():
-            indices = hl.get_indices(topology, resname, atomlist)
-            indices_dict[feature] = indices
+
+            indlst = [hl.get_indices(topology, resname, a) for a in atomlist]
+            indices = np.concatenate([list(i) for i in indlst])
+            lengths  = np.array([len(i) for i in indlst])
+
+            indices_dict[feature] = (indices , lengths)
+
         return indices_dict
 
-    @staticmethod
-    def get_coordinates(traj_and_report, indices_dict):
+    @classmethod
+    def get_coordinates(cls, traj_and_report, indices_dict):
         trajfile, report = traj_and_report
-        indices = np.concatenate([i for i in indices_dict.values()])
+        print(indices_dict)
+        indices = np.concatenate([i[0] for i in indices_dict.values()])
         accepted_steps = hl.accepted_pele_steps(report)
 
         traj = hl.load_trajectory(trajfile, indices)
@@ -123,15 +130,57 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
 
         coord_dict = {}
         start = 0
-        for feature, indices in indices_dict.items():
+        for feature, (indices, lengths) in indices_dict.items():
+            print(indices, lengths)
             stop = start + len(indices)
-            coord_dict[feature] = coords[:, start:stop, :].reshape(-1, 3)
-            start += len(indices)
+            feature_coords = coords[:, start:stop, :].reshape(-1, 3)
+            start = stop
+            feature_coords = cls.calc_cycle_centroids(feature_coords, lengths)
+            coord_dict[feature] = feature_coords
         return coord_dict
 
+    @classmethod
+    def calc_cycle_centroids(cls, coords, lengths):
+        ind = np.where(lengths > 1)[0]
+        if ind.size == 0:
+            return coords
+
+        acc = list(accumulate(lengths))
+        for i in ind:
+            start = 0 if i == 0 else acc[i-1]
+            stop = acc[i]
+            cycle_coords = coords[start:stop, :]
+            centroid = hl.centroid(cycle_coords)
+            coords[start] = centroid
+            coords[start+1:stop] = np.NaN
+        coords = coords[~ np.all(np.isnan(coords), axis=1)]
+        return coords
+
     @abc.abstractmethod
-    def run(self):
-        pass
+    def run(self, ncpus):
+        import tracemalloc
+
+        tracemalloc.start()
+
+        topology = self.get_topology(self.top_file)
+
+        indices_dict = self.get_indices(topology, self.resname)
+
+        first_size, first_peak = tracemalloc.get_traced_memory()
+
+        coord_dicts = hl.parallelize(self.__class__.get_coordinates, self.traj_and_reports, ncpus, indices_dict=indices_dict)
+
+        tracemalloc.reset_peak()
+
+        second_size, second_peak = tracemalloc.get_traced_memory()
+
+        merged_coord_dict = hl.merge_array_dicts(*coord_dicts)
+
+
+        print(f"First memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
+        print(f"Second memory usage is {second_size / 10**6}MB; Peak was {second_peak / 10**6}MB")
+
+        return merged_coord_dict
 
 
     @abc.abstractmethod
