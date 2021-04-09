@@ -2,7 +2,6 @@ import os
 import copy
 import numpy as np
 from scipy.spatial import distance
-from functools import reduce
 import PELEpharmacophore.helpers as hl
 import PELEpharmacophore.analysis.grid as gr
 import PELEpharmacophore.analysis.simulation_analyzer as sa
@@ -44,7 +43,7 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         dist = np.sqrt(3)*self.grid.radius #get dist from center to vertex
         atoms_near = hl.neighbor_search(coords, self.grid.center, dist)
         inside_grid_mask = np.logical_and(self.grid.v1 <= atoms_near, atoms_near <=  self.grid.v8).all(axis=1)
-        grid_atoms = coords[inside_grid_mask]
+        grid_atoms = atoms_near[inside_grid_mask]
         return grid_atoms
 
 
@@ -111,19 +110,21 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         """
         coord_dict = super().run(ncpus)
 
-        grid_atoms_dict = {}
-        for feature, coords in coord_dict.items():
-            grid_atoms_dict[feature] = self.get_grid_atoms(coords)
-
         voxel_centers = np.array([v.center for v in self.grid.voxels])
 
-        voxel_ind_dict = {}
-        for feature, coords in grid_atoms_dict.items():
-            voxel_ind_dict[feature] = self.check_voxels(coords, voxel_centers)
+        grid_atoms_dict = {feature: self.get_grid_atoms(coords) \
+                           for feature, coords in coord_dict.items()}
+
+        voxel_ind_dict  = {feature: self.check_voxels(coords, voxel_centers) \
+                           for feature, coords in grid_atoms_dict.items()}
 
         for feature, inds in voxel_ind_dict.items():
             self.fill_grid(feature, inds)
-        print([v.freq_dict for v in self.grid.voxels])
+
+        lst1 = [v.freq_dict for v in self.grid.voxels if v.freq_dict]
+        lst2 = [np.round(np.array([v.center]), decimals=2) for v in self.grid.voxels if v.freq_dict]
+        lst3 = [i for i, v in enumerate(self.grid.voxels) if v.freq_dict]
+        print(list(zip(lst1, lst2, lst3)))
 
     def set_frequency_filter(self, threshold):
         """
@@ -173,7 +174,6 @@ class GridAnalyzer(sa.SimulationAnalyzer):
 
 if __name__ == "__main__":
     target = GridAnalyzer("/home/ana/GitRepositories/PELEpharmacophore/tests/data/simulation_1")
-    #target = GridAnalizer("PELEpharmacophore/1/")
     target.set_ligand("L", "SB2", 800)
     #features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
     features =  {'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': [('CA1', 'CA4'), ('CD1', 'CD4'), ('CC4', 'CC5', 'CC2')]}

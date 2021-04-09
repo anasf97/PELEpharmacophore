@@ -22,11 +22,11 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         """
         self.result_dir = f"{indir}/output/"
         self.top_file = os.path.join(self.result_dir, "topologies", "topology_0.pdb")
-        self.trajectories = glob.glob(os.path.join(self.result_dir, "0",  "trajectory_*.pdb"))
-        print(self.trajectories)
+        self.trajectories = glob.glob(os.path.join(self.result_dir, "0",  "trajectory_1.pdb"))
         print(self.top_file)
-        self.reports = glob.glob(os.path.join(self.result_dir, "0", "report_*"))
+        self.reports = glob.glob(os.path.join(self.result_dir, "0", "report_1"))
         self.match_traj_and_report()
+        print(self.traj_and_reports)
         self.chain = None
 
 
@@ -92,7 +92,7 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
 
 
 
-    def get_indices(self, topology, resname):
+    def get_indices(self, topology, resname, atomlist):
         """
         Gets all atoms defined in the `features` attribute.
 
@@ -105,56 +105,12 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         ----------
         featured_grid_atoms : list of Atom objects
         """
-        indices_dict = {}
+        indlst  = [hl.get_indices(topology, resname, a) for a in atomlist]
+        indices = np.concatenate([list(i) for i in indlst])
+        lengths = np.array([len(i) for i in indlst])
 
-        for feature, atomlist in self.features.items():
+        return (indices , lengths)
 
-            indlst = [hl.get_indices(topology, resname, a) for a in atomlist]
-            indices = np.concatenate([list(i) for i in indlst])
-            lengths  = np.array([len(i) for i in indlst])
-
-            indices_dict[feature] = (indices , lengths)
-
-        return indices_dict
-
-    @classmethod
-    def get_coordinates(cls, traj_and_report, indices_dict):
-        trajfile, report = traj_and_report
-        print(indices_dict)
-        indices = np.concatenate([i[0] for i in indices_dict.values()])
-        accepted_steps = hl.accepted_pele_steps(report)
-
-        traj = hl.load_trajectory(trajfile, indices)
-        coords = traj.xyz *10  # coord units from nm to A
-        coords = coords[accepted_steps] # duplicate rows when a step is rejected
-
-        coord_dict = {}
-        start = 0
-        for feature, (indices, lengths) in indices_dict.items():
-            print(indices, lengths)
-            stop = start + len(indices)
-            feature_coords = coords[:, start:stop, :].reshape(-1, 3)
-            start = stop
-            feature_coords = cls.calc_cycle_centroids(feature_coords, lengths)
-            coord_dict[feature] = feature_coords
-        return coord_dict
-
-    @classmethod
-    def calc_cycle_centroids(cls, coords, lengths):
-        ind = np.where(lengths > 1)[0]
-        if ind.size == 0:
-            return coords
-
-        acc = list(accumulate(lengths))
-        for i in ind:
-            start = 0 if i == 0 else acc[i-1]
-            stop = acc[i]
-            cycle_coords = coords[start:stop, :]
-            centroid = hl.centroid(cycle_coords)
-            coords[start] = centroid
-            coords[start+1:stop] = np.NaN
-        coords = coords[~ np.all(np.isnan(coords), axis=1)]
-        return coords
 
     @abc.abstractmethod
     def run(self, ncpus):
@@ -164,13 +120,12 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
 
         topology = self.get_topology(self.top_file)
 
-        indices_dict = self.get_indices(topology, self.resname)
+        indices_dict = {feature: self.get_indices(topology, self.resname, atomlist) \
+                        for feature, atomlist in self.features.items()}
 
         first_size, first_peak = tracemalloc.get_traced_memory()
 
-        coord_dicts = hl.parallelize(self.__class__.get_coordinates, self.traj_and_reports, ncpus, indices_dict=indices_dict)
-
-        tracemalloc.reset_peak()
+        coord_dicts = hl.parallelize(get_coordinates, self.traj_and_reports, ncpus, indices_dict=indices_dict)
 
         second_size, second_peak = tracemalloc.get_traced_memory()
 
@@ -186,3 +141,38 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def save_pharmacophores(self):
         pass
+
+def get_coordinates(traj_and_report, indices_dict):
+    trajfile, report = traj_and_report
+    indices = np.concatenate([i[0] for i in indices_dict.values()])
+    accepted_steps = hl.accepted_pele_steps(report)
+
+    traj = hl.load_trajectory(trajfile, indices)
+    coords = traj.xyz *10  # coord units from nm to A
+    coords = coords[accepted_steps] # duplicate rows when a step is rejected
+
+    coord_dict = {}
+    start = 0
+    for feature, (indices, lengths) in indices_dict.items():
+        stop = start + len(indices)
+        feature_coords = coords[:, start:stop, :]
+        start = stop
+        feature_coords = calc_cycle_centroids(feature_coords, lengths)
+        coord_dict[feature] = feature_coords.reshape(-1, 3)
+    return coord_dict
+
+def calc_cycle_centroids(coords, lengths):
+    ind = np.where(lengths > 1)[0]
+    if ind.size == 0:
+        return coords
+
+    acc = list(accumulate(lengths))
+    for i in ind:
+        start = 0 if i == 0 else acc[i-1]
+        stop = acc[i]
+        cycle_coords = coords[:, start:stop, :]
+        centroid = hl.centroid(cycle_coords)
+        coords[:, start, :] = centroid
+        coords[:, start+1:stop, :] = np.NaN
+    coords = coords[~np.all(np.isnan(coords), axis=2)]
+    return coords

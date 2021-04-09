@@ -7,8 +7,10 @@ from sklearn.neighbors import KDTree
 # from Bio.PDB.PDBParser import PDBParser
 # from Bio.PDB.NeighborSearch import NeighborSearch
 
+
 def load_topology(file):
     return md.load(file).topology
+
 
 def get_indices(topology, resname, atoms):
     if isinstance(atoms, list) or isinstance(atoms, tuple):
@@ -16,8 +18,10 @@ def get_indices(topology, resname, atoms):
     query = f"resname {resname} and name {atoms}"
     return topology.select(query)
 
+
 def load_trajectory(file, indices=None):
     return md.load(file, atom_indices=indices)
+
 
 def read_pdb(file):
     parser = PDBParser()
@@ -25,17 +29,19 @@ def read_pdb(file):
     structure = parser.get_structure(pdb_id, file)
     return structure
 
+
 def neighbor_search_biopython(atom_list, center, distance):
     neighbor_search = NeighborSearch(atom_list)
     atoms_near = neighbor_search.search(center, distance, 'A')
     return atoms_near
 
-def neighbor_search(coordinates, center, dist):
+
+def neighbor_search(coords, center, dist):
     center = np.array(center).reshape(1, 3)
-    tree = KDTree(coordinates, leaf_size=3)
+    tree = KDTree(coords)
     result = tree.query_radius(center, r=dist)
     ind = result[0]
-    atoms_near = coordinates[ind]
+    atoms_near = coords[ind]
     return atoms_near
 
 def format_line_pdb(coords, atomname, bfact, models = None, atomnum = "1", resname="UNK", chain="A", resnum="1", occ=1.00):
@@ -45,13 +51,16 @@ def format_line_pdb(coords, atomname, bfact, models = None, atomnum = "1", resna
     line = f"{atomstr:5}{atomnum:>5} {atomname:4} {resname:3} {chain}{resnum:>4}    {x:>8.3f}{y:>8.3f}{z:>8.3f}{occ:6.2f}{bfact:7.2f}{element:>12}{models}\n"
     return line
 
+
 def inside_grid(coord, lower_coord, upper_coord):
     return all(lower_coord <= coord) and all(coord <= upper_coord)
+
 
 def basename_without_extension(filename):
     basename = os.path.basename(filename)
     basename, ext = os.path.splitext(basename)
     return basename
+
 
 def frequency_dict(dict_, key, value):
     if dict_ is None:
@@ -62,6 +71,7 @@ def frequency_dict(dict_, key, value):
         dict_[key] = value
     return dict_
 
+
 def list_dict(dict_, key, value):
     if dict_ is None:
         dict_ = {}
@@ -69,12 +79,16 @@ def list_dict(dict_, key, value):
     return dict_
 
 
+def dict_function(func, dict_):
+    return {key:func(value) for key, value in dict_}
+
+
 def merge_array_dicts(*dicts):
     merged_dict = {}
     union_keys = set().union(*dicts)
 
     for key in union_keys:
-        lst = [i for i, d in enumerate(dicts) if key in d]
+        lst = [i for i, d in enumerate(dicts) if key in d] # ids of the dictionaries where certain key is present
         merged_dict[key] = np.vstack([dicts[i][key] for i in lst])
 
     return merged_dict
@@ -82,6 +96,7 @@ def merge_array_dicts(*dicts):
 
 def custom_path(dir, custom_var, string, ext):
     return os.path.join(dir, f"{custom_var}{string}{ext}")
+
 
 def accepted_pele_steps(report):
     delimiter = " "*4
@@ -102,11 +117,6 @@ def parallelize(func, iterable, n_workers, **kwargs):
     else:
         return list(map(f, iterable))
 
-def centroid(coords):
-    return coords.sum(axis = 0) / len(coords)
 
-def midpoint(point, other_point):
-    x, y, z = point
-    other_x, other_y, other_z = other_point
-    mid = np.array(((x + other_x)/2 , (y + other_y)/2, (z + other_z)/2))
-    return mid
+def centroid(coords):
+    return coords.sum(axis = 1) / coords.shape[1]
