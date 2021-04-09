@@ -121,10 +121,6 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         for feature, inds in voxel_ind_dict.items():
             self.fill_grid(feature, inds)
 
-        lst1 = [v.freq_dict for v in self.grid.voxels if v.freq_dict]
-        lst2 = [np.round(np.array([v.center]), decimals=2) for v in self.grid.voxels if v.freq_dict]
-        lst3 = [i for i, v in enumerate(self.grid.voxels) if v.freq_dict]
-        print(list(zip(lst1, lst2, lst3)))
 
     def set_frequency_filter(self, threshold):
         """
@@ -169,18 +165,13 @@ class GridAnalyzer(sa.SimulationAnalyzer):
                     path = os.path.join(outdir, f"{feature}pharmacophore.pdb")
                     if freq >= self.threshold_dict[feature]:
                         with open(path, 'a') as f:
-                            feature_origin = voxel.origin_dict[feature]
-                            f.write(hl.format_line_pdb(voxel.center, feature, freq, feature_origin))
+                            f.write(hl.format_line_pdb(voxel.center, feature, freq))
 
 if __name__ == "__main__":
     target = GridAnalyzer("/home/ana/GitRepositories/PELEpharmacophore/tests/data/simulation_1")
     target.set_ligand("L", "SB2", 800)
-    #features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
     features =  {'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': [('CA1', 'CA4'), ('CD1', 'CD4'), ('CC4', 'CC5', 'CC2')]}
-    #features={'NEG': ['C2'], 'ALI': ['C1']}
-    #features = {'ARO':['C5']}
     target.set_features(features)
     target.set_grid((2.173, 15.561, 28.257), 7)
     target.run(1)
-    # target.set_frequency_filter(0)
-    # target.save_pharmacophores("PharmacophoresTest1_frag82")
+    target.set_frequency_filter(0)

@@ -22,11 +22,9 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         """
         self.result_dir = f"{indir}/output/"
         self.top_file = os.path.join(self.result_dir, "topologies", "topology_0.pdb")
-        self.trajectories = glob.glob(os.path.join(self.result_dir, "0",  "trajectory_1.pdb"))
-        print(self.top_file)
-        self.reports = glob.glob(os.path.join(self.result_dir, "0", "report_1"))
+        self.trajectories = glob.glob(os.path.join(self.result_dir, "0",  "trajectory_*.pdb"))
+        self.reports = glob.glob(os.path.join(self.result_dir, "0", "report_*"))
         self.match_traj_and_report()
-        print(self.traj_and_reports)
         self.chain = None
 
 
@@ -65,7 +63,7 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         ----------
         features : dict
              Dictionary of ligand features.
-             Keys define the features and values, atoms associated with said feature.
+             Keys define the features and values, the atoms associated with said feature.
 
         Examples
         ----------
@@ -122,7 +120,6 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
 
         indices_dict = {feature: self.get_indices(topology, self.resname, atomlist) \
                         for feature, atomlist in self.features.items()}
-
         first_size, first_peak = tracemalloc.get_traced_memory()
 
         coord_dicts = hl.parallelize(get_coordinates, self.traj_and_reports, ncpus, indices_dict=indices_dict)
