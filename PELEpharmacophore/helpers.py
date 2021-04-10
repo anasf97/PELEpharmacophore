@@ -4,8 +4,6 @@ import mdtraj as md
 from multiprocessing import Pool
 from functools import partial
 from sklearn.neighbors import KDTree
-# from Bio.PDB.PDBParser import PDBParser
-# from Bio.PDB.NeighborSearch import NeighborSearch
 
 
 def load_topology(file):
@@ -21,19 +19,6 @@ def get_indices(topology, resname, atoms):
 
 def load_trajectory(file, indices=None):
     return md.load(file, atom_indices=indices)
-
-
-def read_pdb(file):
-    parser = PDBParser()
-    pdb_id, ext = file.split(".pdb")
-    structure = parser.get_structure(pdb_id, file)
-    return structure
-
-
-def neighbor_search_biopython(atom_list, center, distance):
-    neighbor_search = NeighborSearch(atom_list)
-    atoms_near = neighbor_search.search(center, distance, 'A')
-    return atoms_near
 
 
 def neighbor_search(coords, center, dist):
