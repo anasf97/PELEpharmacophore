@@ -118,9 +118,11 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         voxel_ind_dict  = {feature: self.check_voxels(coords, voxel_centers) \
                            for feature, coords in grid_atoms_dict.items()}
 
+       
         for feature, inds in voxel_ind_dict.items():
             self.fill_grid(feature, inds)
 
+ 
 
     def set_frequency_filter(self, threshold):
         """
