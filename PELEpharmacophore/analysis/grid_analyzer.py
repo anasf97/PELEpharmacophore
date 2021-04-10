@@ -71,34 +71,6 @@ class GridAnalyzer(sa.SimulationAnalyzer):
             self.grid.voxels[i].count_feature(feature)
 
 
-    def merge_grids(self, grid, other_grid):
-        """
-        Merge the information from two grids together.
-
-        Parameters
-        ----------
-        grid, other_grid : Grid object
-            Grids to merge.
-
-        Returns
-        ----------
-        grid : Grid object
-            Merged grid.
-        """
-        if grid.is_empty():
-            grid = copy.deepcopy(other_grid)
-        else:
-            for i, other_voxel in enumerate(other_grid.voxels):
-                voxel = grid.voxels[i]
-                if other_voxel.freq_dict:
-                    for feature, other_freq in other_voxel.freq_dict.items():
-                        voxel.freq_dict = hl.frequency_dict(voxel.freq_dict, feature, other_freq)
-                        other_models = other_voxel.origin_dict[feature]
-                        for model in other_models:
-                            voxel.origin_dict = hl.list_dict(voxel.origin_dict, feature, model)
-        return grid
-
-
     def run(self, ncpus):
         """
         Analyze the full simulation.

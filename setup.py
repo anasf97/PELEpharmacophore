@@ -8,7 +8,7 @@ setuptools.setup(name='PELEpharmacophore',
       author='Ana Sánchez',
       author_email='ana.sanchez01@estudiant.upf.edu',
       packages=setuptools.find_packages(),
-      install_requires=["biopython", "scipy", "dataclasses", "sklearn", "pytest", "flake8", "mdtraj", "astunparse"],
+      install_requires=["scipy", "dataclasses", "sklearn", "pytest", "flake8", "mdtraj", "astunparse"],
       classifiers=[
        "Programming Language :: Python :: 3",
        "License :: OSI Approved :: MIT License",
