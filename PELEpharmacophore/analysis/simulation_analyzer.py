@@ -20,13 +20,14 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         indir : str
              Name of the simulation directory.
         """
+        self.set_dir(indir)
+
+    def set_dir(self, indir):
         self.result_dir = f"{indir}/output/"
         self.top_file = os.path.join(self.result_dir, "topologies", "topology_0.pdb")
         self.trajectories = glob.glob(os.path.join(self.result_dir, "0",  "trajectory_*.pdb"))
         self.reports = glob.glob(os.path.join(self.result_dir, "0", "report_*"))
         self.match_traj_and_report()
-        self.chain = None
-
 
     def match_traj_and_report(self):
         """

@@ -6,4 +6,6 @@ VALID_FLAGS = { "dir": "dir",
                 "resnum": "resnum",
                 "grid_center":"grid_center",
                 "grid_radius":"grid_radius",
-                "features":"features"}
+                "features":"features",
+                "analysis_type":"analysis_type"
+                }
