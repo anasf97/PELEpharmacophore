@@ -1,4 +1,5 @@
 VALID_FLAGS = { "dir": "dir",
+		"outdir": "outdir",
                 "target": "target",
                 "ligand" : "ligand",
                 "chain":"chain",

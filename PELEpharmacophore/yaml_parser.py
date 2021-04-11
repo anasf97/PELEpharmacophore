@@ -59,6 +59,9 @@ class YamlParser(object):
         self.ligand = data.get(valid_flags["ligand"], None)
         self.target = data.get(valid_flags["target"], None)
         self.analysis_type = data.get(valid_flags["analysis_type"], None)
+        self.outdir = data.get(valid_flags["outdir"], "")
+        self.outdir = os.path.abspath(self.outdir) if self.outdir else ""
+
         #self.verbose = data.get(valid_flags["verbose"], None)
 
 @dataclass

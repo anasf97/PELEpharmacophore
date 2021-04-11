@@ -24,13 +24,13 @@ def run_PELEpharmacophore(analyzer, indir, chain, resname, resnum, center, radiu
     analyzer.set_features(features)
     analyzer.run(ncpus)
 
-def PELEpharmacophore_ligand(analyzer_class, indir, chain, resname, resnum, center, radius, features, ncpus, filt=2):
+def PELEpharmacophore_ligand(analyzer_class, indir, chain, resname, resnum, center, radius, features, ncpus, outdir, filt=2):
     analyzer = analyzer_class(indir)
     analyzer = run_PELEpharmacophore(indir, chain, resname, resnum, center, radius, features, ncpus)
     analyzer.set_frequency_filter(filt) # add filter as arg
-    analyzer.save_pharmacophores()
+    analyzer.save_pharmacophores(outdir)
 
-def PELEpharmacophore_fragments(analyzer_class, indir, center, radius, ncpus=23, fragment_features=ff.fragment_features, filt=1):
+def PELEpharmacophore_fragments(analyzer_class, indir, center, radius, outdir, ncpus=23, fragment_features=ff.fragment_features, filt=1):
     import datetime
 
     start = datetime.datetime.now()
@@ -38,7 +38,7 @@ def PELEpharmacophore_fragments(analyzer_class, indir, center, radius, ncpus=23,
     print("Starting time:", t)
 
     analyzer = analyzer_class(indir)
-    if center:
+    if isinstance(analyzer, ga.GridAnalyzer):
         analyzer.set_grid(center, radius)
  
     subdirs = [os.path.join(indir, subdir) for subdir in os.listdir(indir)]
@@ -50,7 +50,7 @@ def PELEpharmacophore_fragments(analyzer_class, indir, center, radius, ncpus=23,
         run_PELEpharmacophore(analyzer, frag_dir, "L", "FRA", 900, center, radius, features, ncpus)
 
     analyzer.set_frequency_filter(filt)
-    analyzer.save_pharmacophores("Pharmacophores_frags")
+    analyzer.save_pharmacophores(outdir)
 
     finish = datetime.datetime.now()
     t = finish.strftime("%H:%M:%S")
@@ -71,9 +71,9 @@ def main(input_yaml):
     analysis_class = analysis_types[yaml_obj.analysis_type]
     
     if yaml_obj.ligand:
-        PELEpharmacophore_ligand(analysis_class, yaml_obj.dir, yaml_obj.chain, yaml_obj.resname, yaml_obj.resnum, yaml_obj.grid_center, yaml_obj.grid_radius, yaml_obj.features)
+        PELEpharmacophore_ligand(analysis_class, yaml_obj.dir, yaml_obj.chain, yaml_obj.resname, yaml_obj.resnum, yaml_obj.grid_center, yaml_obj.grid_radius, yaml_obj.features, yaml_obj.outdir)
     else:
-        PELEpharmacophore_fragments(analysis_class, yaml_obj.dir, yaml_obj.grid_center, yaml_obj.grid_radius)
+        PELEpharmacophore_fragments(analysis_class, yaml_obj.dir, yaml_obj.grid_center, yaml_obj.grid_radius, yaml_obj.outdir)
 
 
 if __name__ == "__main__":
