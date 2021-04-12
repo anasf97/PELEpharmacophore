@@ -40,7 +40,7 @@ def PELEpharmacophore_fragments(analyzer_class, indir, center, radius, outdir, n
     analyzer = analyzer_class(indir)
     if isinstance(analyzer, ga.GridAnalyzer):
         analyzer.set_grid(center, radius)
-
+    analyzer.set_ligand("L", "FRA", 900)
     analyzer.run(ncpus)
     analyzer.set_frequency_filter(filt)
     analyzer.save_pharmacophores(outdir)

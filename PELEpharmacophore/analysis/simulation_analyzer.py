@@ -167,7 +167,10 @@ class Simulation():
 
     def __init__(self, indir, features=None):
         if features is None:
-            self.features = self.set_features(indir)
+            frag_regex = ".*(?P<frag>frag\d+$)"
+            frag = re.match(frag_regex, indir)['frag']
+            self.features = ff.fragment_features[frag]
+            
         else:
             self.features = features
 
@@ -186,8 +189,9 @@ class Simulation():
         traj_and_reports = list(zip(self.trajectories, self.reports))
         return traj_and_reports
 
-    def set_features(indir, fragment_features=ff.fragment_features):
+    def set_features(d, fragment_features=ff.fragment_features):
+        print(type(d))
         frag_regex = ".*(?P<frag>frag\d+$)"
-        frag = re.match(frag_regex, indir)['frag']
+        frag = re.match(frag_regex, d)['frag']
         features = fragment_features[frag]
         return features
