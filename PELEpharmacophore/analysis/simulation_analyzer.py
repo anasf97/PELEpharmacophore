@@ -3,15 +3,17 @@ import abc
 import re
 import glob
 import numpy as np
-from itertools import accumulate
+from itertools import accumulate, chain
 import PELEpharmacophore.helpers as hl
+import PELEpharmacophore.data.fragment_features as ff
+
 
 class SimulationAnalyzer(metaclass=abc.ABCMeta):
     """
     Class for analysing PELE simulations.
     """
 
-    def __init__(self, indir=None):
+    def __init__(self, indir, features=None):
         """
         Create a new SimulationAnalyzer object.
 
@@ -20,22 +22,13 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         indir : str
              Name of the simulation directory.
         """
-        self.set_dir(indir)
+        subdirs = [os.path.join(indir, subdir) for subdir in os.listdir(indir)]
+        output_dir = os.path.join(indir, "output")
 
-    def set_dir(self, indir):
-        self.result_dir = f"{indir}/output/"
-        self.top_file = os.path.join(self.result_dir, "topologies", "topology_0.pdb")
-        self.trajectories = glob.glob(os.path.join(self.result_dir, "0",  "trajectory_*.pdb"))
-        self.reports = glob.glob(os.path.join(self.result_dir, "0", "report_*"))
-        self.match_traj_and_report()
-
-    def match_traj_and_report(self):
-        """
-        Match each trajectory with its respective report.
-        """
-        self.trajectories.sort()
-        self.reports.sort()
-        self.traj_and_reports = list(zip(self.trajectories, self.reports))
+        if output_dir in subdirs:
+            self.simulations = [Simulation(indir, features)]
+        else:
+            self.simulations = [Simulation(s, features) for s in subdirs]
 
 
     def set_ligand(self, chain, resname, resnum):
@@ -54,23 +47,6 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         self.chain = chain
         self.resname = resname
         self.resnum = resnum
-
-
-    def set_features(self, features):
-        """
-        Set the pharmacophore features of the ligand.
-
-        Parameters
-        ----------
-        features : dict
-             Dictionary of ligand features.
-             Keys define the features and values, the atoms associated with said feature.
-
-        Examples
-        ----------
-        >>> features = {'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2']}
-        """
-        self.features = features
 
 
     def get_topology(self, file):
@@ -117,22 +93,32 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
 
         tracemalloc.start()
 
-        topology = self.get_topology(self.top_file)
+        all_coord_dicts = []
 
-        indices_dict = {feature: self.get_indices(topology, self.resname, atomlist) \
-                        for feature, atomlist in self.features.items()}
+        for simulation in self.simulations:
+
+            print(simulation.output)
+
+            topology = self.get_topology(simulation.topfile)
+
+            indices_dict = {feature: self.get_indices(topology, self.resname, atomlist) \
+                            for feature, atomlist in simulation.features.items()}
+
+            coord_dicts = [get_coordinates(traj_and_report, indices_dict) for traj_and_report in simulation.traj_and_reports]
+
+            all_coord_dicts.append(coord_dicts)
+
         first_size, first_peak = tracemalloc.get_traced_memory()
 
-        coord_dicts = hl.parallelize(get_coordinates, self.traj_and_reports, ncpus, indices_dict=indices_dict)
+        print(f"Second memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
+
+        all_coord_flat = chain.from_iterable(all_coord_dicts)
+
+        merged_coord_dict = hl.merge_array_dicts(*all_coord_flat)
 
         second_size, second_peak = tracemalloc.get_traced_memory()
 
-        merged_coord_dict = hl.merge_array_dicts(*coord_dicts)
-
-
-        print(f"First memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
         print(f"Second memory usage is {second_size / 10**6}MB; Peak was {second_peak / 10**6}MB")
-
         return merged_coord_dict
 
 
@@ -174,3 +160,34 @@ def calc_cycle_centroids(coords, lengths):
         coords[:, start+1:stop, :] = np.NaN
     coords = coords[~np.all(np.isnan(coords), axis=2)]
     return coords
+
+
+class Simulation():
+    """docstring for Simulation."""
+
+    def __init__(self, indir, features=None):
+        if features is None:
+            self.features = self.set_features(indir)
+        else:
+            self.features = features
+
+        self.output = f"{indir}/output/"
+        self.topfile = os.path.join(self.output, "topologies", "topology_0.pdb")
+        self.trajectories = glob.glob(os.path.join(self.output, "0",  "trajectory_*.pdb"))
+        self.reports = glob.glob(os.path.join(self.output, "0", "report_*"))
+        self.traj_and_reports = self.match_traj_and_report()
+
+    def match_traj_and_report(self):
+        """
+        Match each trajectory with its respective report.
+        """
+        self.trajectories.sort()
+        self.reports.sort()
+        traj_and_reports = list(zip(self.trajectories, self.reports))
+        return traj_and_reports
+
+    def set_features(indir, fragment_features=ff.fragment_features):
+        frag_regex = ".*(?P<frag>frag\d+$)"
+        frag = re.match(frag_regex, indir)['frag']
+        features = fragment_features[frag]
+        return features
