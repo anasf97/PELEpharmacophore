@@ -104,7 +104,7 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
             indices_dict = {feature: self.get_indices(topology, self.resname, atomlist) \
                             for feature, atomlist in simulation.features.items()}
 
-            coord_dicts = [get_coordinates(traj_and_report, indices_dict) for traj_and_report in simulation.traj_and_reports]
+            coord_dicts = hl.parallelize(get_coordinates, simulation.traj_and_reports, ncpus, indices_dict=indices_dict)
 
             all_coord_dicts.append(coord_dicts)
 
@@ -170,7 +170,7 @@ class Simulation():
             frag_regex = ".*(?P<frag>frag\d+$)"
             frag = re.match(frag_regex, indir)['frag']
             self.features = ff.fragment_features[frag]
-            
+
         else:
             self.features = features
 
