@@ -40,15 +40,8 @@ def PELEpharmacophore_fragments(analyzer_class, indir, center, radius, outdir, n
     analyzer = analyzer_class(indir)
     if isinstance(analyzer, ga.GridAnalyzer):
         analyzer.set_grid(center, radius)
- 
-    subdirs = [os.path.join(indir, subdir) for subdir in os.listdir(indir)]
 
-    for frag_dir in subdirs:
-        frag_regex = ".*(?P<frag>frag\d+$)"
-        frag = re.match(frag_regex, frag_dir)['frag']
-        features = fragment_features[frag]
-        run_PELEpharmacophore(analyzer, frag_dir, "L", "FRA", 900, center, radius, features, ncpus)
-
+    analyzer.run(ncpus)
     analyzer.set_frequency_filter(filt)
     analyzer.save_pharmacophores(outdir)
 
@@ -69,7 +62,7 @@ def main(input_yaml):
         raise ce.WrongYamlFile(f"Input file: {input_yaml} does not look like a correct yml file")
 
     analysis_class = analysis_types[yaml_obj.analysis_type]
-    
+
     if yaml_obj.ligand:
         PELEpharmacophore_ligand(analysis_class, yaml_obj.dir, yaml_obj.chain, yaml_obj.resname, yaml_obj.resnum, yaml_obj.grid_center, yaml_obj.grid_radius, yaml_obj.features, yaml_obj.outdir)
     else:
