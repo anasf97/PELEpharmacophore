@@ -90,11 +90,11 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         voxel_ind_dict  = {feature: self.check_voxels(coords, voxel_centers) \
                            for feature, coords in grid_atoms_dict.items()}
 
-       
+
         for feature, inds in voxel_ind_dict.items():
             self.fill_grid(feature, inds)
 
- 
+
 
     def set_frequency_filter(self, threshold):
         """
@@ -142,10 +142,10 @@ class GridAnalyzer(sa.SimulationAnalyzer):
                             f.write(hl.format_line_pdb(voxel.center, feature, freq))
 
 if __name__ == "__main__":
-    target = GridAnalyzer("/home/ana/GitRepositories/PELEpharmacophore/tests/data/simulation_1")
-    target.set_ligand("L", "SB2", 800)
-    features =  {'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': [('CA1', 'CA4'), ('CD1', 'CD4'), ('CC4', 'CC5', 'CC2')]}
-    target.set_features(features)
+    #features =  {'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': [('CA1', 'CA4'), ('CD1', 'CD4'), ('CC4', 'CC5', 'CC2')]}
+    features =  {'ALI': ['C1']}
+    target = GridAnalyzer("/home/ana/GitRepositories/PELEpharmacophore/tests/data/simulations", features)
+    target.set_ligand("L", "FRA", 900)
     target.set_grid((2.173, 15.561, 28.257), 7)
     target.run(1)
     target.set_frequency_filter(0)

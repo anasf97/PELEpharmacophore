@@ -93,20 +93,23 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
 
         tracemalloc.start()
 
-        all_coord_dicts = []
+        # all_coord_dicts = []
 
-        for simulation in self.simulations:
-
-            print(simulation.output)
-
-            topology = self.get_topology(simulation.topfile)
-
-            indices_dict = {feature: self.get_indices(topology, self.resname, atomlist) \
-                            for feature, atomlist in simulation.features.items()}
-
-            coord_dicts = hl.parallelize(get_coordinates, simulation.traj_and_reports, ncpus, indices_dict=indices_dict)
-
-            all_coord_dicts.append(coord_dicts)
+        # for simulation in self.simulations:
+        #
+        #     print(simulation.output)
+        #
+        #     topology = self.get_topology(simulation.topfile)
+        #
+        #     indices_dict = {feature: self.get_indices(topology, self.resname, atomlist) \
+        #                     for feature, atomlist in simulation.features.items()}
+        #
+        #     print(indices_dict)
+        #
+        #     coord_dicts = hl.parallelize(get_coordinates, simulation.traj_and_reports, ncpus, indices_dict=indices_dict)
+        #
+        #     all_coord_dicts.append(coord_dicts)
+        all_coord_dicts = hl.parallelize(get_simulation_coordinates, self.simulations, ncpus, resname = self.resname)
 
         first_size, first_peak = tracemalloc.get_traced_memory()
 
@@ -125,6 +128,16 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def save_pharmacophores(self):
         pass
+
+def get_simulation_coordinates(simulation, resname):
+        topology = self.get_topology(simulation.topfile)
+
+        indices_dict = {feature: self.get_indices(topology, resname, atomlist) \
+                        for feature, atomlist in simulation.features.items()}
+
+        coord_dicts = hl.parallelize(get_coordinates, simulation.traj_and_reports, 1, indices_dict=indices_dict)
+
+        return coord_dicts
 
 def get_coordinates(traj_and_report, indices_dict):
     trajfile, report = traj_and_report
