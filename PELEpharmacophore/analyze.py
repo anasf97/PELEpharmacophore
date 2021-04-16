@@ -24,7 +24,6 @@ def run_PELEpharmacophore(analyzer, indir, chain, resname, resnum, center, radiu
     analyzer.set_ligand(chain, resname, resnum)
     analyzer.set_features(features)
     coord_dicts = analyzer.get_coords(ncpus)
-    print("holi")
     gen_dict = hl.gen_array_dicts(*coord_dicts)
     for feature, coords in gen_dict.items():
         print(feature, coords)
