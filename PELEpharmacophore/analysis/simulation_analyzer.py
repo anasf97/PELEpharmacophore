@@ -92,37 +92,38 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         import tracemalloc
 
         tracemalloc.start()
+        all_coord_dicts = []
 
-        # all_coord_dicts = []
+        for simulation in self.simulations:
 
-        # for simulation in self.simulations:
-        #
-        #     print(simulation.output)
-        #
-        #     topology = self.get_topology(simulation.topfile)
-        #
-        #     indices_dict = {feature: self.get_indices(topology, self.resname, atomlist) \
-        #                     for feature, atomlist in simulation.features.items()}
-        #
-        #     print(indices_dict)
-        #
-        #     coord_dicts = hl.parallelize(get_coordinates, simulation.traj_and_reports, ncpus, indices_dict=indices_dict)
-        #
-        #     all_coord_dicts.append(coord_dicts)
-        all_coord_dicts = hl.parallelize(get_simulation_coordinates, self.simulations, ncpus, resname = self.resname)
+            print(simulation.output)
+
+            topology = self.get_topology(simulation.topfile)
+
+            indices_dict = {feature: self.get_indices(topology, self.resname, atomlist) \
+                            for feature, atomlist in simulation.features.items()}
+
+            print(indices_dict)
+
+            coord_dicts = hl.parallelize(get_coordinates, simulation.traj_and_reports, ncpus, indices_dict=indices_dict)
+
+            gen_dict = hl.gen_array_dicts(*coord_dicts)
+
+            all_coord_dicts.append(gen_dict)
 
         first_size, first_peak = tracemalloc.get_traced_memory()
 
         print(f"Second memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
 
-        all_coord_flat = chain.from_iterable(all_coord_dicts)
+        merged_all_coord_dict = hl.gen_array_dicts(*all_coord_dicts)
 
-        merged_coord_dict = hl.merge_array_dicts(*all_coord_flat)
+        final_coord_dict = {feature: chain.from_iterable(gen) \
+                            for feature, gen in merged_all_coord_dict.items()}
 
         second_size, second_peak = tracemalloc.get_traced_memory()
 
         print(f"Second memory usage is {second_size / 10**6}MB; Peak was {second_peak / 10**6}MB")
-        return merged_coord_dict
+        return final_coord_dict
 
 
     @abc.abstractmethod
