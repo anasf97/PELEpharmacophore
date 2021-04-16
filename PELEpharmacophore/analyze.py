@@ -2,6 +2,7 @@ import os
 import re
 from argparse import ArgumentParser
 from PELEpharmacophore.errors import custom_errors as ce
+import PELEpharmacophore.helpers as hl
 import PELEpharmacophore.analysis.grid_analyzer as ga
 import PELEpharmacophore.analysis.meanshift_analyzer as ma
 import PELEpharmacophore.yaml_parser as yp
@@ -22,7 +23,12 @@ def run_PELEpharmacophore(analyzer, indir, chain, resname, resnum, center, radiu
     analyzer.set_dir(indir)
     analyzer.set_ligand(chain, resname, resnum)
     analyzer.set_features(features)
-    analyzer.run(ncpus)
+    coord_dicts = analyzer.get_coords(ncpus)
+    print("holi")
+    gen_dict = hl.gen_array_dicts(*coord_dicts)
+    for feature, coords in gen_dict.items():
+        print(feature, coords)
+    return
 
 def PELEpharmacophore_ligand(analyzer_class, indir, chain, resname, resnum, center, radius, features, ncpus, outdir, filt=2):
     analyzer = analyzer_class(indir)
@@ -30,7 +36,7 @@ def PELEpharmacophore_ligand(analyzer_class, indir, chain, resname, resnum, cent
     analyzer.set_frequency_filter(filt) # add filter as arg
     analyzer.save_pharmacophores(outdir)
 
-def PELEpharmacophore_fragments(analyzer_class, indir, center, radius, outdir, ncpus=23, fragment_features=ff.fragment_features, filt=1):
+def PELEpharmacophore_fragments(analyzer_class, indir, center, radius, outdir, ncpus=1, fragment_features=ff.fragment_features, filt=1):
     import datetime
 
     start = datetime.datetime.now()
@@ -44,17 +50,19 @@ def PELEpharmacophore_fragments(analyzer_class, indir, center, radius, outdir, n
     subdirs = [os.path.join(indir, subdir) for subdir in os.listdir(indir)]
 
     for frag_dir in subdirs:
+        print(frag_dir)
         frag_regex = ".*(?P<frag>frag\d+$)"
         frag = re.match(frag_regex, frag_dir)['frag']
         features = fragment_features[frag]
         run_PELEpharmacophore(analyzer, frag_dir, "L", "FRA", 900, center, radius, features, ncpus)
 
-    analyzer.set_frequency_filter(filt)
-    analyzer.save_pharmacophores(outdir)
+    #analyzer.set_frequency_filter(filt)
+    #analyzer.save_pharmacophores(outdir)
 
     finish = datetime.datetime.now()
     t = finish.strftime("%H:%M:%S")
     print("Finishing time:", t)
+    return
 
 analysis_types = {
                  "grid": ga.GridAnalyzer,

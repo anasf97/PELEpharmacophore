@@ -78,6 +78,14 @@ def merge_array_dicts(*dicts):
 
     return merged_dict
 
+def gen_array_dicts(*dicts):
+    gen_dict = {}
+    union_keys = set().union(*dicts)
+
+    for key in union_keys:
+        gen_dict[key] = (d[key] for d in dicts if key in d)
+
+    return gen_dict
 
 def custom_path(dir, custom_var, string, ext):
     return os.path.join(dir, f"{custom_var}{string}{ext}")
@@ -100,7 +108,7 @@ def parallelize(func, iterable, n_workers, **kwargs):
         with Pool(n_workers) as p:
             return p.map(f, iterable)
     else:
-        return list(map(f, iterable))
+        return map(f, iterable)
 
 
 def centroid(coords):

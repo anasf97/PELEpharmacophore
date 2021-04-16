@@ -111,8 +111,7 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         return (indices , lengths)
 
 
-    @abc.abstractmethod
-    def run(self, ncpus):
+    def get_coords(self, ncpus):
         import tracemalloc
 
         tracemalloc.start()
@@ -123,22 +122,28 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
                         for feature, atomlist in self.features.items()}
         first_size, first_peak = tracemalloc.get_traced_memory()
 
+        print("Starting paralellizing")
+        print(self.traj_and_reports)
+        print(ncpus)
         coord_dicts = hl.parallelize(get_coordinates, self.traj_and_reports, ncpus, indices_dict=indices_dict)
 
         second_size, second_peak = tracemalloc.get_traced_memory()
 
-        merged_coord_dict = hl.merge_array_dicts(*coord_dicts)
+        #merged_coord_dict = hl.merge_array_dicts(*coord_dicts)
 
 
         print(f"First memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
         print(f"Second memory usage is {second_size / 10**6}MB; Peak was {second_peak / 10**6}MB")
 
-        return merged_coord_dict
+        return coord_dicts 
 
 
     @abc.abstractmethod
     def save_pharmacophores(self):
         pass
+
+def f(file):
+     return 1
 
 def get_coordinates(traj_and_report, indices_dict):
     trajfile, report = traj_and_report
@@ -147,7 +152,7 @@ def get_coordinates(traj_and_report, indices_dict):
 
     traj = hl.load_trajectory(trajfile, indices)
     coords = traj.xyz *10  # coord units from nm to A
-    coords = coords[accepted_steps] # duplicate rows when a step is rejected
+    #coords = coords[accepted_steps] # duplicate rows when a step is rejected
 
     coord_dict = {}
     start = 0
