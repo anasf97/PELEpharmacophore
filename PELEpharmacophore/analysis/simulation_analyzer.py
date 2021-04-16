@@ -125,7 +125,7 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         print("Starting paralellizing")
         print(self.traj_and_reports)
         print(ncpus)
-        coord_dicts = hl.parallelize(get_coordinates, self.traj_and_reports, ncpus, indices_dict=indices_dict)
+        coord_dicts = hl.parallelize(get_coordinates, self.traj_and_reports, ncpus, indices_dict=indices_dict, resname=self.resname)
 
         second_size, second_peak = tracemalloc.get_traced_memory()
 
@@ -135,7 +135,7 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         print(f"First memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
         print(f"Second memory usage is {second_size / 10**6}MB; Peak was {second_peak / 10**6}MB")
 
-        return merged_coord_dicts 
+        return merged_coord_dicts
 
 
     @abc.abstractmethod
@@ -143,7 +143,7 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         pass
 
 
-def get_coordinates(traj_and_report, indices_dict):
+def get_coordinates(traj_and_report, indices_dict, resname):
     import datetime
 
     start = datetime.datetime.now()
@@ -153,12 +153,12 @@ def get_coordinates(traj_and_report, indices_dict):
     indices = np.concatenate([i[0] for i in indices_dict.values()])
     accepted_steps = hl.accepted_pele_steps(report)
 
-    traj = hl.load_trajectory(trajfile, indices)
+    traj = hl.get_coordinates_from_trajectory(trajfile, resname, indices_to_retrieve=indices)
     coords = traj.xyz *10  # coord units from nm to A
     #coords = coords[accepted_steps] # duplicate rows when a step is rejected
 
     coord_dict = {}
-    start = 0 
+    start = 0
     print("+++++", traj_and_report)
     for feature, (indices, lengths) in indices_dict.items():
         stop = start + len(indices)
