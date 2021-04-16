@@ -129,13 +129,13 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
 
         second_size, second_peak = tracemalloc.get_traced_memory()
 
-        #merged_coord_dict = hl.merge_array_dicts(*coord_dicts)
+        merged_coord_dict = hl.merge_array_dicts(*coord_dicts)
 
 
         print(f"First memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
         print(f"Second memory usage is {second_size / 10**6}MB; Peak was {second_peak / 10**6}MB")
 
-        return coord_dicts 
+        return merged_coord_dicts 
 
 
     @abc.abstractmethod
@@ -144,6 +144,11 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
 
 
 def get_coordinates(traj_and_report, indices_dict):
+    import datetime
+
+    start = datetime.datetime.now()
+    t = start.strftime("%H:%M:%S")
+    print("+++++Starting time:", t, traj_and_report)
     trajfile, report = traj_and_report
     indices = np.concatenate([i[0] for i in indices_dict.values()])
     accepted_steps = hl.accepted_pele_steps(report)
@@ -153,13 +158,18 @@ def get_coordinates(traj_and_report, indices_dict):
     #coords = coords[accepted_steps] # duplicate rows when a step is rejected
 
     coord_dict = {}
-    start = 0
+    start = 0 
+    print("+++++", traj_and_report)
     for feature, (indices, lengths) in indices_dict.items():
         stop = start + len(indices)
         feature_coords = coords[:, start:stop, :]
         start = stop
         feature_coords = calc_cycle_centroids(feature_coords, lengths)
         coord_dict[feature] = feature_coords.reshape(-1, 3)
+
+    finish = datetime.datetime.now()
+    t = finish.strftime("%H:%M:%S")
+    print("+++++Finishing time:", t, traj_and_report)
     return coord_dict
 
 def calc_cycle_centroids(coords, lengths):

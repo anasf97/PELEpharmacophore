@@ -23,10 +23,8 @@ def run_PELEpharmacophore(analyzer, indir, chain, resname, resnum, center, radiu
     analyzer.set_dir(indir)
     analyzer.set_ligand(chain, resname, resnum)
     analyzer.set_features(features)
-    coord_dicts = analyzer.get_coords(ncpus)
-    gen_dict = hl.gen_array_dicts(*coord_dicts)
-    for feature, coords in gen_dict.items():
-        print(feature, coords)
+    merged_coord_dict = analyzer.get_coords(ncpus)
+    print(merged_coord_dict)
     return
 
 def PELEpharmacophore_ligand(analyzer_class, indir, chain, resname, resnum, center, radius, features, ncpus, outdir, filt=2):
@@ -35,7 +33,7 @@ def PELEpharmacophore_ligand(analyzer_class, indir, chain, resname, resnum, cent
     analyzer.set_frequency_filter(filt) # add filter as arg
     analyzer.save_pharmacophores(outdir)
 
-def PELEpharmacophore_fragments(analyzer_class, indir, center, radius, outdir, ncpus=1, fragment_features=ff.fragment_features, filt=1):
+def PELEpharmacophore_fragments(analyzer_class, indir, center, radius, outdir, ncpus=5, fragment_features=ff.fragment_features, filt=1):
     import datetime
 
     start = datetime.datetime.now()
