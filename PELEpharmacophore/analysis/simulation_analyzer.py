@@ -142,8 +142,6 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
     def save_pharmacophores(self):
         pass
 
-def f(file):
-     return 1
 
 def get_coordinates(traj_and_report, indices_dict):
     trajfile, report = traj_and_report
