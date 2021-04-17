@@ -215,7 +215,7 @@ def gen_array_dicts(*dicts):
     for key in union_keys:
         gen_dict[key] = (d[key] for d in dicts if key in d)
 
-    return gen_dict
+  return gen_dict
 
 def custom_path(dir, custom_var, string, ext):
     return os.path.join(dir, f"{custom_var}{string}{ext}")
@@ -237,10 +237,10 @@ def parallelize(func, iterable, n_workers, **kwargs):
     if n_workers > 1:
         with Pool(n_workers) as p:
             results = p.map(f, iterable)
-
     else:
         results = map(f, iterable)
     return results
+
 
 
 def centroid(coords):
