@@ -80,7 +80,7 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         ncpus : int
             Number of processors.
         """
-        coord_dict = super().run(ncpus)
+        coord_dict = self.get_coords(ncpus)
 
         voxel_centers = np.array([v.center for v in self.grid.voxels])
 

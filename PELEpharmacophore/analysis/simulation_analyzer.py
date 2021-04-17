@@ -87,8 +87,7 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         return (indices , lengths)
 
 
-    @abc.abstractmethod
-    def run(self, ncpus):
+    def get_coords(self, ncpus):
         import tracemalloc
 
         tracemalloc.start()
@@ -96,52 +95,32 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
 
         for simulation in self.simulations:
 
-            print(simulation.output)
-
             topology = self.get_topology(simulation.topfile)
 
             indices_dict = {feature: self.get_indices(topology, self.resname, atomlist) \
                             for feature, atomlist in simulation.features.items()}
 
-            print(indices_dict)
-
             coord_dicts = hl.parallelize(get_coordinates, simulation.traj_and_reports, ncpus, indices_dict=indices_dict)
-            
-            print(coord_dicts)	    
-            gen_dict = hl.gen_array_dicts(*coord_dicts)
-	   
-            print(gen_dict)
 
-            #all_coord_dicts.append(gen_dict)
+            sim_coord_dict = hl.merge_array_dicts(*coord_dicts)
+
+            all_coord_dicts.append(sim_coord_dict)
 
         first_size, first_peak = tracemalloc.get_traced_memory()
 
         print(f"Second memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
 
-       # merged_all_coord_dict = hl.gen_array_dicts(*all_coord_dicts)
+        final_coord_dict = hl.merge_array_dicts(*all_coord_dicts)
 
-        #final_coord_dict = {feature: chain.from_iterable(gen) \
-        #                    for feature, gen in merged_all_coord_dict.items()}
-
-        #second_size, second_peak = tracemalloc.get_traced_memory()
+        second_size, second_peak = tracemalloc.get_traced_memory()
 
         print(f"Second memory usage is {second_size / 10**6}MB; Peak was {second_peak / 10**6}MB")
-        #return final_coord_dict
-        return
+        return final_coord_dict
+
 
     @abc.abstractmethod
     def save_pharmacophores(self):
         pass
-
-def get_simulation_coordinates(simulation, resname):
-        topology = self.get_topology(simulation.topfile)
-
-        indices_dict = {feature: self.get_indices(topology, resname, atomlist) \
-                        for feature, atomlist in simulation.features.items()}
-
-        coord_dicts = hl.parallelize(get_coordinates, simulation.traj_and_reports, 1, indices_dict=indices_dict)
-
-        return coord_dicts
 
 def get_coordinates(traj_and_report, indices_dict):
     trajfile, report = traj_and_report
@@ -150,7 +129,7 @@ def get_coordinates(traj_and_report, indices_dict):
 
     traj = hl.load_trajectory(trajfile, indices)
     coords = traj.xyz *10  # coord units from nm to A
-    #coords = coords[accepted_steps] # duplicate rows when a step is rejected
+    coords = coords[accepted_steps] # duplicate rows when a step is rejected
 
     coord_dict = {}
     start = 0

@@ -19,7 +19,7 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
         ncpus : int
             Number of processors.
         """
-        coord_dict = super().run(ncpus)
+        coord_dict = self.get_coords(ncpus)
 
         estimator = MeanShift(bandwidth=1, n_jobs=ncpus, cluster_all=True)
 
