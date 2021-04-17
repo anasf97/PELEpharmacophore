@@ -88,37 +88,45 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         return (res_indices , lengths)
 
 
-    def get_coords(self, ncpus):
+    def get_coords(self, ncpus, steps):
 
         import tracemalloc
 
         tracemalloc.start()
     
         all_coord_dicts = []
+        final_coord_dict={}
 
         for simulation in self.simulations:
           
-            topology = self.get_topology(self.top_file)
+            topology = self.get_topology(simulation.topfile)
             
             res_indices = topology.select(f"resname {self.resname}")
             
             first_index = res_indices[0]
 
             indices_dict = {feature: self.get_indices(topology, self.resname, atomlist, first_index) \
-                            for feature, atomlist in self.features.items()}
+                            for feature, atomlist in simulation.features.items()}
 
-            coord_dicts = hl.parallelize(get_coordinates, self.traj_and_reports, ncpus, indices_dict=indices_dict, resname=self.resname)
+            coord_dicts = hl.parallelize(get_coordinates, simulation.traj_and_reports, ncpus, indices_dict=indices_dict, resname=self.resname, steps=steps)
             
-
             sim_coord_dict = hl.merge_array_dicts(*coord_dicts)
 
-            all_coord_dicts.append(sim_coord_dict)
+            first_size, first_peak = tracemalloc.get_traced_memory()
+            print(f"Loop memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
+
+            #all_coord_dicts.append(sim_coord_dict)
+
+            final_coord_dict = hl.merge_array_dicts(final_coord_dict, sim_coord_dict)
+
+            first_size, first_peak = tracemalloc.get_traced_memory()
+            print(f"Loop2 memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
 
         first_size, first_peak = tracemalloc.get_traced_memory()
 
-        print(f"Second memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
+        print(f"First memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
 
-        final_coord_dict = hl.merge_array_dicts(*all_coord_dicts)
+        #final_coord_dict = hl.merge_array_dicts(*all_coord_dicts)
 
         second_size, second_peak = tracemalloc.get_traced_memory()
 
@@ -131,13 +139,14 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         pass
 
 
-def get_coordinates(traj_and_report, indices_dict, resname):
+def get_coordinates(traj_and_report, indices_dict, resname, steps):
     trajfile, report = traj_and_report
     indices = np.concatenate([i[0] for i in indices_dict.values()])
     accepted_steps = hl.accepted_pele_steps(report)
 
     coords = hl.get_coordinates_from_trajectory(resname, trajfile, indices_to_retrieve=indices)
     coords = coords[accepted_steps] # duplicate rows when a step is rejected
+    coords = coords[:steps]
 
     coord_dict = {}
     start = 0

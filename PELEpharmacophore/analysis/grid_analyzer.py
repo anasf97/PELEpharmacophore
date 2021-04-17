@@ -62,6 +62,13 @@ class GridAnalyzer(sa.SimulationAnalyzer):
             Grid object that contains the given atoms in the correspondent voxels.
         """
         dist = distance.cdist(coords, voxel_centers, 'sqeuclidean')
+        
+        
+        import tracemalloc
+        tracemalloc.start()
+        first_size, first_peak = tracemalloc.get_traced_memory()
+	
+        print(f"Check voxels memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
         voxel_inds = dist.argmin(axis=1) #get index of closest voxel to each atom
         return voxel_inds
 
@@ -71,7 +78,7 @@ class GridAnalyzer(sa.SimulationAnalyzer):
             self.grid.voxels[i].count_feature(feature)
 
 
-    def run(self, ncpus):
+    def run(self, ncpus, steps):
         """
         Analyze the full simulation.
 
@@ -80,16 +87,24 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         ncpus : int
             Number of processors.
         """
-        coord_dict = self.get_coords(ncpus)
+        import tracemalloc
 
+        tracemalloc.start()
+            
+        coord_dict = self.get_coords(ncpus, steps)
+                 
+        print("Starting grid_analysis")
         voxel_centers = np.array([v.center for v in self.grid.voxels])
 
         grid_atoms_dict = {feature: self.get_grid_atoms(coords) \
                            for feature, coords in coord_dict.items()}
+        first_size, first_peak = tracemalloc.get_traced_memory()
 
+        print(f"Grid memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
+        print("Grid_atoms")
         voxel_ind_dict  = {feature: self.check_voxels(coords, voxel_centers) \
                            for feature, coords in grid_atoms_dict.items()}
-
+        print("voxel_inds")
 
         for feature, inds in voxel_ind_dict.items():
             self.fill_grid(feature, inds)

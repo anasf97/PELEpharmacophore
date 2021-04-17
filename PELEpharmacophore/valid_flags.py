@@ -8,5 +8,6 @@ VALID_FLAGS = { "dir": "dir",
                 "grid_center":"grid_center",
                 "grid_radius":"grid_radius",
                 "features":"features",
-                "analysis_type":"analysis_type"
+                "analysis_type":"analysis_type",
+		"steps" : "steps"
                 }

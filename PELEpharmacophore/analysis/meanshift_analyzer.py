@@ -10,7 +10,7 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
     Class for analysing PELE simulations using the meanshift algorithm.
     """
 
-    def run(self, ncpus):
+    def run(self, ncpus, steps):
         """
         Analyze the full simulation.
 
@@ -19,7 +19,7 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
         ncpus : int
             Number of processors.
         """
-        coord_dict = self.get_coords(ncpus)
+        coord_dict = self.get_coords(ncpus, steps)
 
         estimator = MeanShift(bandwidth=1, n_jobs=ncpus, cluster_all=True)
 

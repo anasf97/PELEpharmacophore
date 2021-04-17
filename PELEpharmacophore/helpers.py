@@ -215,7 +215,7 @@ def gen_array_dicts(*dicts):
     for key in union_keys:
         gen_dict[key] = (d[key] for d in dicts if key in d)
 
-  return gen_dict
+    return gen_dict
 
 def custom_path(dir, custom_var, string, ext):
     return os.path.join(dir, f"{custom_var}{string}{ext}")

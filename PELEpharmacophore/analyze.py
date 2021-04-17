@@ -32,7 +32,13 @@ def PELEpharmacophore_ligand(analyzer_class, indir, chain, resname, resnum, cent
     analyzer.set_frequency_filter(filt) # add filter as arg
     analyzer.save_pharmacophores(outdir)
 
-def PELEpharmacophore_fragments(analyzer_class, indir, center, radius, outdir, ncpus=5, fragment_features=ff.fragment_features, filt=1):
+def PELEpharmacophore_fragments(analyzer_class, indir, center, radius, outdir, steps, ncpus=5, fragment_features=ff.fragment_features, filt=1):
+    from datetime import datetime
+
+    now = datetime.now()
+
+    current_time = now.strftime("%H:%M:%S")
+    print("Starting time =", current_time)
 
     analyzer = analyzer_class(indir)
     
@@ -40,9 +46,15 @@ def PELEpharmacophore_fragments(analyzer_class, indir, center, radius, outdir, n
         analyzer.set_grid(center, radius)
         
     analyzer.set_ligand("L", "FRA", 900)
-    analyzer.run(ncpus)
+    analyzer.run(ncpus, steps)
     analyzer.set_frequency_filter(filt)
     analyzer.save_pharmacophores(outdir)
+
+    finish = datetime.now()
+
+    finish_time = finish.strftime("%H:%M:%S")
+    print("Starting time =", finish_time)
+
 
     return
 
@@ -64,7 +76,7 @@ def main(input_yaml):
     if yaml_obj.ligand:
         PELEpharmacophore_ligand(analysis_class, yaml_obj.dir, yaml_obj.chain, yaml_obj.resname, yaml_obj.resnum, yaml_obj.grid_center, yaml_obj.grid_radius, yaml_obj.features, yaml_obj.outdir)
     else:
-        PELEpharmacophore_fragments(analysis_class, yaml_obj.dir, yaml_obj.grid_center, yaml_obj.grid_radius, yaml_obj.outdir)
+        PELEpharmacophore_fragments(analysis_class, yaml_obj.dir, yaml_obj.grid_center, yaml_obj.grid_radius, yaml_obj.outdir, yaml_obj.steps)
 
 
 if __name__ == "__main__":
