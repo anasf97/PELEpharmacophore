@@ -2,6 +2,7 @@ import os
 import re
 from argparse import ArgumentParser
 from PELEpharmacophore.errors import custom_errors as ce
+import PELEpharmacophore.helpers as hl
 import PELEpharmacophore.analysis.grid_analyzer as ga
 import PELEpharmacophore.analysis.meanshift_analyzer as ma
 import PELEpharmacophore.yaml_parser as yp
@@ -22,7 +23,8 @@ def run_PELEpharmacophore(analyzer, indir, chain, resname, resnum, center, radiu
     analyzer.set_dir(indir)
     analyzer.set_ligand(chain, resname, resnum)
     analyzer.set_features(features)
-    analyzer.run(ncpus)
+    merged_coord_dict = analyzer.get_coords(ncpus)
+    return merged_coord_dict
 
 def PELEpharmacophore_ligand(analyzer_class, indir, chain, resname, resnum, center, radius, features, ncpus, outdir, filt=2):
     analyzer = analyzer_class(indir)
@@ -30,29 +32,25 @@ def PELEpharmacophore_ligand(analyzer_class, indir, chain, resname, resnum, cent
     analyzer.set_frequency_filter(filt) # add filter as arg
     analyzer.save_pharmacophores(outdir)
 
-def PELEpharmacophore_fragments(analyzer_class, indir, center, radius, outdir, ncpus=23, fragment_features=ff.fragment_features, filt=1):
-    import datetime
-
-    start = datetime.datetime.now()
-    t = start.strftime("%H:%M:%S")
-    print("Starting time:", t)
+def PELEpharmacophore_fragments(analyzer_class, indir, center, radius, outdir, ncpus=5, fragment_features=ff.fragment_features, filt=1):
 
     analyzer = analyzer_class(indir)
+    
     if isinstance(analyzer, ga.GridAnalyzer):
         analyzer.set_grid(center, radius)
+        
     analyzer.set_ligand("L", "FRA", 900)
     analyzer.run(ncpus)
     analyzer.set_frequency_filter(filt)
     analyzer.save_pharmacophores(outdir)
 
-    finish = datetime.datetime.now()
-    t = finish.strftime("%H:%M:%S")
-    print("Finishing time:", t)
+    return
 
 analysis_types = {
                  "grid": ga.GridAnalyzer,
                  "meanshift": ma.MeanshiftAnalyzer
 }
+
 
 def main(input_yaml):
     yaml_obj = yp.YamlParser(input_yaml, vf.VALID_FLAGS)
