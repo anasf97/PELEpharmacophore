@@ -19,9 +19,8 @@ FEATURES =  {'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 
 @pytest.fixture
 def create_analyzer():
     def _create_analyzer(analyzer_class):
-        a = analyzer_class(SIMULATION)
+        a = analyzer_class(SIMULATION, FEATURES)
         a.set_ligand(CHAIN, RESNAME, RESNUM)
-        a.set_features(FEATURES)
         if analyzer_class == ga.GridAnalyzer:
             a.set_grid(CENTER, RADIUS)
         return a
@@ -45,16 +44,23 @@ def active_voxels():
 @pytest.fixture
 def compare_files():
     def _compare_files(file1, file2):
+        print(file1, file2)
         with open(file1, 'r') as f1:
-            lines1 = [line for line in f1.readlines()]
+            lines1 = [line for line in f1.readlines()
+                      if not line.startswith("*")]
         with open(file2, 'r') as f2:
-            lines2 = [line for line in f2.readlines()]
+            lines2 = [line for line in f2.readlines()
+                      if not line.startswith("*")]
+
         assert len(lines1) == len(lines2), \
             'Number of lines do not match: ' \
             + str(len(lines1)) + ' and ' + str(len(lines2))
+
         for i, (line1, line2) in enumerate(zip(lines1, lines2)):
-            assert line1 == line2, \
-                'Found different lines at line {}:'.format(i) + '\n' + line1 + line2
+            assert line1 in lines2, \
+                'Line not found in reference template {}:' \
+                .format(i) + '\n' + line1
+
     return _compare_files
 
 @pytest.fixture

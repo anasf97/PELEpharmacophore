@@ -10,20 +10,25 @@ import PELEpharmacophore.analysis.simulation_analyzer as sa
 DIR = os.path.dirname(__file__)
 SIMULATION_1 = os.path.join(DIR, "data/simulation_1")
 TRAJECTORY_1 = os.path.join(DIR, "data/simulation_1/output/0/trajectory_1.pdb")
+REPORT_1 = os.path.join(DIR, "data/simulation_1/output/0/report_1")
 TOPOLOGY = os.path.join(DIR, "data/simulation_1/output/topologies/topology_0.pdb")
-
+FEATURES =  {'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': [('CA1', 'CA4'), ('CD1', 'CD4'), ('CC4', 'CC5', 'CC2')]}
 
 ATOMLIST = ['NB1', 'NC3', 'O2']
-
-EXPECTED_INDICES = np.array([5665, 5673, 5656])
-EXPECTED_LENGTHS = np.array([1, 1, 1])
+EXPECTED_INDICES = [9, 17, 0]
+EXPECTED_LENGTHS = [1, 1, 1]
 
 def test_get_indices(create_analyzer, top_file=TOPOLOGY, atomlist = ATOMLIST, expected_indices=EXPECTED_INDICES, expected_lengths=EXPECTED_LENGTHS):
+    print("first test")
     grid_a = create_analyzer(ga.GridAnalyzer)
     topology = grid_a.get_topology(top_file)
-    indices, lengths = grid_a.get_indices(topology, grid_a.resname, atomlist)
+    res_indices = topology.select(f"resname {grid_a.resname}")
+    first_index = res_indices[0]
+
+    indices, lengths = grid_a.get_indices(topology, grid_a.resname, atomlist, first_index)
     assert np.all(indices == expected_indices)
     assert np.all(lengths == expected_lengths)
+
 
 EXPECTED_COORD_DICT = dict([
                         ('HBD', np.array([[ 1.3959999, 14.473    , 28.174   ],
@@ -55,12 +60,16 @@ EXPECTED_COORD_DICT = dict([
                                          [ 2.4653332, 14.354668 , 29.036001 ]], dtype=np.float32))
 ])
 
-def test_get_coordinates(create_analyzer, compare_dicts, top_file=TOPOLOGY, expected_coord_dict=EXPECTED_COORD_DICT):
+def test_get_coordinates(create_analyzer, compare_dicts, top_file=TOPOLOGY, features=FEATURES, traj=TRAJECTORY_1, report=REPORT_1, expected_coord_dict=EXPECTED_COORD_DICT):
     grid_a = create_analyzer(ga.GridAnalyzer)
     topology = grid_a.get_topology(top_file)
-    indices_dict = {feature: grid_a.get_indices(topology, grid_a.resname, atomlist) \
-                    for feature, atomlist in grid_a.features.items()}
-    coord_dict = sa.get_coordinates(grid_a.traj_and_reports[0], indices_dict=indices_dict)
+    traj_and_report = (traj, report)
+    res_indices = topology.select(f"resname {grid_a.resname}")
+    first_index = res_indices[0]
+
+    indices_dict = {feature: grid_a.get_indices(topology, grid_a.resname, atomlist, first_index) \
+                    for feature, atomlist in features.items()}
+    coord_dict = sa.get_coordinates(traj_and_report, indices_dict=indices_dict, resname=grid_a.resname)
     compare_dicts(coord_dict,  expected_coord_dict)
 
 
@@ -75,7 +84,7 @@ EXPECTED_GRID_ATOMS = np.array([[ 1.3959999, 14.473    , 28.174    ],
                                 [ 1.3959999, 14.473    , 28.174    ],
                                 [ 1.244    , 14.578    , 29.013    ]])
 
-def test_get_indices(create_analyzer, coords=COORDS, expected_grid_atoms=EXPECTED_GRID_ATOMS):
+def test_get_grid_atoms(create_analyzer, coords=COORDS, expected_grid_atoms=EXPECTED_GRID_ATOMS):
     grid_a = create_analyzer(ga.GridAnalyzer)
     grid_atoms = grid_a.get_grid_atoms(coords)
     assert_array_equal(grid_atoms, expected_grid_atoms)
