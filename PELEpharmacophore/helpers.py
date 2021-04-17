@@ -144,7 +144,7 @@ def get_coordinates_from_trajectory(residue_name, trajectory, remove_hydrogen=Fa
               'Its coordinates will be skipped.')
         # Return empty array
         return np.array(())
-    
+
     return coordinates
 
 def load_trajectory(file, indices=None):

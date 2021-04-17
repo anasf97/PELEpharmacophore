@@ -3,6 +3,7 @@ import abc
 import re
 import glob
 import numpy as np
+from collections import OrderedDict
 from itertools import accumulate, chain
 import PELEpharmacophore.helpers as hl
 import PELEpharmacophore.data.fragment_features as ff
@@ -80,7 +81,7 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         ----------
         featured_grid_atoms : list of Atom objects
         """
-        indlst  = [hl.get_indices(topology, resname, a) for a in atomlist]            
+        indlst  = [hl.get_indices(topology, resname, a) for a in atomlist]
         indices = np.concatenate([list(i) for i in indlst])
         res_indices =[i-first_index for i in indices]
         lengths = np.array([len(i) for i in indlst])
@@ -93,7 +94,7 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         import tracemalloc
 
         tracemalloc.start()
-    
+
         all_coord_dicts = []
         final_coord_dict={}
 
@@ -102,14 +103,14 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
             topology = self.get_topology(simulation.topfile)
             
             res_indices = topology.select(f"resname {self.resname}")
-            
+
             first_index = res_indices[0]
 
-            indices_dict = {feature: self.get_indices(topology, self.resname, atomlist, first_index) \
-                            for feature, atomlist in simulation.features.items()}
+            indices_dict = OrderedDict([(feature, self.get_indices(topology, self.resname, atomlist, first_index)) for feature, atomlist in simulation.features.items()])
 
-            coord_dicts = hl.parallelize(get_coordinates, simulation.traj_and_reports, ncpus, indices_dict=indices_dict, resname=self.resname, steps=steps)
-            
+            coord_dicts = hl.parallelize(get_coordinates, simulation.traj_and_reports, ncpus, indices_dict=indices_dict, resname=self.resname)
+
+
             sim_coord_dict = hl.merge_array_dicts(*coord_dicts)
 
             first_size, first_peak = tracemalloc.get_traced_memory()
@@ -142,9 +143,15 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
 def get_coordinates(traj_and_report, indices_dict, resname, steps):
     trajfile, report = traj_and_report
     indices = np.concatenate([i[0] for i in indices_dict.values()])
+    print(indices)
+    temp = np.argsort(indices)
+    order_indices = np.empty_like(temp)
+    order_indices[temp] = np.arange(len(indices))
+    print(order_indices)
     accepted_steps = hl.accepted_pele_steps(report)
 
     coords = hl.get_coordinates_from_trajectory(resname, trajfile, indices_to_retrieve=indices)
+    coords = coords[:, order_indices]
     coords = coords[accepted_steps] # duplicate rows when a step is rejected
     coords = coords[:steps]
 
@@ -181,7 +188,7 @@ class Simulation():
 
     def __init__(self, indir, features=None):
         if features is None:
-            frag_regex = ".*(?P<frag>frag\d+$)"
+            frag_regex = r".*(?P<frag>frag\d+$)"
             frag = re.match(frag_regex, indir)['frag']
             self.features = ff.fragment_features[frag]
 
@@ -205,7 +212,7 @@ class Simulation():
 
     def set_features(d, fragment_features=ff.fragment_features):
         print(type(d))
-        frag_regex = ".*(?P<frag>frag\d+$)"
+        frag_regex = r".*(?P<frag>frag\d+$)"
         frag = re.match(frag_regex, d)['frag']
         features = fragment_features[frag]
         return features
