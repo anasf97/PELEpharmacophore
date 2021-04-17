@@ -57,7 +57,7 @@ def get_coordinates_from_trajectory(residue_name, trajectory, remove_hydrogen=Fa
     if only_first_model:
         skip_initial_structures = False
     else:
-        skip_initial_structures = self.skip_initial_structures
+        skip_initial_structures = False
     with open(trajectory) as f:
         inside_model = False
         current_model = 0
@@ -144,6 +144,8 @@ def get_coordinates_from_trajectory(residue_name, trajectory, remove_hydrogen=Fa
               'Its coordinates will be skipped.')
         # Return empty array
         return np.array(())
+    
+    return coordinates
 
 def load_trajectory(file, indices=None):
     return md.load(file, atom_indices=indices)
@@ -234,9 +236,11 @@ def parallelize(func, iterable, n_workers, **kwargs):
     f = partial(func, **kwargs)
     if n_workers > 1:
         with Pool(n_workers) as p:
-            return p.map(f, iterable)
+            results = p.map(f, iterable)
+
     else:
-        return map(f, iterable)
+        results = map(f, iterable)
+    return results
 
 
 def centroid(coords):

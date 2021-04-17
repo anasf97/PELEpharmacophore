@@ -91,7 +91,7 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
 
 
 
-    def get_indices(self, topology, resname, atomlist):
+    def get_indices(self, topology, resname, atomlist, first_index):
         """
         Gets all atoms defined in the `features` attribute.
 
@@ -104,38 +104,28 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         ----------
         featured_grid_atoms : list of Atom objects
         """
-        indlst  = [hl.get_indices(topology, resname, a) for a in atomlist]
+        indlst  = [hl.get_indices(topology, resname, a) for a in atomlist]            
         indices = np.concatenate([list(i) for i in indlst])
+        res_indices =[i-first_index for i in indices]
         lengths = np.array([len(i) for i in indlst])
 
-        return (indices , lengths)
+        return (res_indices , lengths)
 
 
     def get_coords(self, ncpus):
-        import tracemalloc
-
-        tracemalloc.start()
 
         topology = self.get_topology(self.top_file)
+        res_indices = topology.select(f"resname {self.resname}")
+        first_index = res_indices[0]
 
-        indices_dict = {feature: self.get_indices(topology, self.resname, atomlist) \
+        indices_dict = {feature: self.get_indices(topology, self.resname, atomlist, first_index) \
                         for feature, atomlist in self.features.items()}
-        first_size, first_peak = tracemalloc.get_traced_memory()
 
-        print("Starting paralellizing")
-        print(self.traj_and_reports)
-        print(ncpus)
         coord_dicts = hl.parallelize(get_coordinates, self.traj_and_reports, ncpus, indices_dict=indices_dict, resname=self.resname)
-
-        second_size, second_peak = tracemalloc.get_traced_memory()
 
         merged_coord_dict = hl.merge_array_dicts(*coord_dicts)
 
-
-        print(f"First memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
-        print(f"Second memory usage is {second_size / 10**6}MB; Peak was {second_peak / 10**6}MB")
-
-        return merged_coord_dicts
+        return merged_coord_dict
 
 
     @abc.abstractmethod
@@ -144,22 +134,15 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
 
 
 def get_coordinates(traj_and_report, indices_dict, resname):
-    import datetime
-
-    start = datetime.datetime.now()
-    t = start.strftime("%H:%M:%S")
-    print("+++++Starting time:", t, traj_and_report)
     trajfile, report = traj_and_report
     indices = np.concatenate([i[0] for i in indices_dict.values()])
     accepted_steps = hl.accepted_pele_steps(report)
 
-    traj = hl.get_coordinates_from_trajectory(trajfile, resname, indices_to_retrieve=indices)
-    coords = traj.xyz *10  # coord units from nm to A
-    #coords = coords[accepted_steps] # duplicate rows when a step is rejected
+    coords = hl.get_coordinates_from_trajectory(resname, trajfile, indices_to_retrieve=indices)
+    coords = coords[accepted_steps] # duplicate rows when a step is rejected
 
     coord_dict = {}
     start = 0
-    print("+++++", traj_and_report)
     for feature, (indices, lengths) in indices_dict.items():
         stop = start + len(indices)
         feature_coords = coords[:, start:stop, :]
@@ -167,9 +150,6 @@ def get_coordinates(traj_and_report, indices_dict, resname):
         feature_coords = calc_cycle_centroids(feature_coords, lengths)
         coord_dict[feature] = feature_coords.reshape(-1, 3)
 
-    finish = datetime.datetime.now()
-    t = finish.strftime("%H:%M:%S")
-    print("+++++Finishing time:", t, traj_and_report)
     return coord_dict
 
 def calc_cycle_centroids(coords, lengths):
