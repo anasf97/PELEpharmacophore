@@ -89,14 +89,14 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         return (res_indices , lengths)
 
 
-    def get_coords(self, ncpus, steps):
+    def get_coords(self, ncpus, steps=None):
 
         final_coord_dict={}
 
         for simulation in self.simulations:
-          
+
             topology = self.get_topology(simulation.topfile)
-            
+
             res_indices = topology.select(f"resname {self.resname}")
 
             first_index = res_indices[0]
@@ -118,7 +118,7 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         pass
 
 
-def get_coordinates(traj_and_report, indices_dict, resname, steps):
+def get_coordinates(traj_and_report, indices_dict, resname, steps=None):
     trajfile, report = traj_and_report
     indices = np.concatenate([i[0] for i in indices_dict.values()])
     temp = np.argsort(indices)
@@ -129,7 +129,8 @@ def get_coordinates(traj_and_report, indices_dict, resname, steps):
     coords = hl.get_coordinates_from_trajectory(resname, trajfile, indices_to_retrieve=indices)
     coords = coords[:, order_indices]
     coords = coords[accepted_steps] # duplicate rows when a step is rejected
-    coords = coords[:steps]
+    if steps is not None:
+        coords = coords[:steps]
 
     coord_dict = {}
     start = 0

@@ -10,7 +10,7 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
     Class for analysing PELE simulations using the meanshift algorithm.
     """
 
-    def run(self, ncpus, steps):
+    def run(self, ncpus, steps=None):
         """
         Analyze the full simulation.
 

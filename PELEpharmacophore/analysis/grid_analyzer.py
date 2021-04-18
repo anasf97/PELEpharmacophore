@@ -71,7 +71,7 @@ class GridAnalyzer(sa.SimulationAnalyzer):
             self.grid.voxels[i].count_feature(feature)
 
 
-    def run(self, ncpus, steps):
+    def run(self, ncpus, steps=None):
         """
         Analyze the full simulation.
 
@@ -80,14 +80,14 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         ncpus : int
             Number of processors.
         """
-            
+
         coord_dict = self.get_coords(ncpus, steps)
-                 
+
         voxel_centers = np.array([v.center for v in self.grid.voxels])
 
         grid_atoms_dict = {feature: self.get_grid_atoms(coords) \
                            for feature, coords in coord_dict.items()}
-        
+
 
         split_grid_atoms = {feature: np.array_split(coords, ncpus) \
                             for feature, coords in grid_atoms_dict.items()}
