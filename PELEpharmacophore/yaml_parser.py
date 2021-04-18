@@ -58,6 +58,10 @@ class YamlParser(object):
         self.grid_radius = data.get(valid_flags["grid_radius"], None)
         self.ligand = data.get(valid_flags["ligand"], None)
         self.target = data.get(valid_flags["target"], None)
+        self.analysis_type = data.get(valid_flags["analysis_type"], None)
+        self.outdir = data.get(valid_flags["outdir"], "")
+        self.outdir = os.path.abspath(self.outdir) if self.outdir else ""
+        self.steps = data.get(valid_flags["steps"], None)
         #self.verbose = data.get(valid_flags["verbose"], None)
 
 @dataclass

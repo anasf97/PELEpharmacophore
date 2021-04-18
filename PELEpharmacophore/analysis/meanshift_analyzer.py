@@ -10,32 +10,7 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
     Class for analysing PELE simulations using the meanshift algorithm.
     """
 
-    def analyze_trajectory(self, traj_and_report):
-        """
-        Analyze a given trajectory file.
-        The analysis consist in, for each of the models in the trajectory,
-        getting the atoms defined in the `features` attribute.
-
-        Parameters
-        ----------
-        traj_and_report : tuple
-            Trajectory and its respective report.
-
-        Returns
-        ----------
-        all_featured_atoms : list of Atom objects
-        """
-        trajfile, report = traj_and_report
-        trajectory = self.get_structure(trajfile)
-        accepted_steps = hl.accepted_pele_steps(report)
-        all_featured_atoms = []
-        for step in accepted_steps:
-            model = trajectory[step]
-            featured_atoms = self.get_atoms(model)
-            [all_featured_atoms.append(fa) for fa in featured_atoms]
-        return all_featured_atoms
-
-    def run(self, ncpus):
+    def run(self, ncpus, steps=None):
         """
         Analyze the full simulation.
 
@@ -44,16 +19,12 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
         ncpus : int
             Number of processors.
         """
-        featured_atoms = hl.parallelize(self.analyze_trajectory, self.traj_and_reports, ncpus)
-        featured_atoms = list(chain.from_iterable(featured_atoms))
+        coord_dict = self.get_coords(ncpus, steps)
 
         estimator = MeanShift(bandwidth=1, n_jobs=ncpus, cluster_all=True)
-        atom_dict ={}
-        for atom in featured_atoms:
-            atom_dict = hl.list_dict(atom_dict, atom.feature, atom.coordinates())
 
         self.cluster_dict={}
-        for feature, coords in atom_dict.items():
+        for feature, coords in coord_dict.items():
             results = estimator.fit_predict(coords)
             p_dict = {}
             for cluster in results:
@@ -117,11 +88,17 @@ class Cluster(object):
         self.center = center
 
 if __name__ == "__main__":
-    target = MeanshiftAnalyzer("/gpfs/scratch/bsc72/bsc72801/ana_sanchez/test5")
-    target.set_ligand("L", "FRA", 900)
+    target = MeanshiftAnalyzer("/home/ana/GitRepositories/PELEpharmacophore/tests/data/simulation_1")
+    target.set_ligand("L", "SB2", 800)
     #features={'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': ['CA5', 'CD1']}
-    features={'NEG': ['C2'], 'ALI': ['C1']}
+    #features={'NEG': ['C2'], 'ALI': ['C1']}
+    features =  {'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': [('CA1', 'CA4'), ('CD1', 'CD4'), ('CC4', 'CC5', 'CC2')]}
     target.set_features(features)
-    target.run(20)
-    target.set_frequency_filter(0)
-    target.save_pharmacophores("PharmacophoresTest5_ms")
+    target.run(1)
+    for feature, clusters in target.cluster_dict.items():
+        centers = [cluster.center for cluster in clusters]
+        freqs = [cluster.frequency for cluster in clusters]
+
+        print(feature, freqs)
+    # target.set_frequency_filter(0)
+    # target.save_pharmacophores("PharmacophoresTest5_ms")
