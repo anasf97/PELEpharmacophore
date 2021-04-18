@@ -91,11 +91,6 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
 
     def get_coords(self, ncpus, steps):
 
-        import tracemalloc
-
-        tracemalloc.start()
-
-        all_coord_dicts = []
         final_coord_dict={}
 
         for simulation in self.simulations:
@@ -108,30 +103,13 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
 
             indices_dict = OrderedDict([(feature, self.get_indices(topology, self.resname, atomlist, first_index)) for feature, atomlist in simulation.features.items()])
 
-            coord_dicts = hl.parallelize(get_coordinates, simulation.traj_and_reports, ncpus, indices_dict=indices_dict, resname=self.resname)
-
+            coord_dicts = hl.parallelize(get_coordinates, simulation.traj_and_reports, ncpus, indices_dict=indices_dict, resname=self.resname, steps=steps)
 
             sim_coord_dict = hl.merge_array_dicts(*coord_dicts)
 
-            first_size, first_peak = tracemalloc.get_traced_memory()
-            print(f"Loop memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
-
-            #all_coord_dicts.append(sim_coord_dict)
-
             final_coord_dict = hl.merge_array_dicts(final_coord_dict, sim_coord_dict)
 
-            first_size, first_peak = tracemalloc.get_traced_memory()
-            print(f"Loop2 memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
 
-        first_size, first_peak = tracemalloc.get_traced_memory()
-
-        print(f"First memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
-
-        #final_coord_dict = hl.merge_array_dicts(*all_coord_dicts)
-
-        second_size, second_peak = tracemalloc.get_traced_memory()
-
-        print(f"Second memory usage is {second_size / 10**6}MB; Peak was {second_peak / 10**6}MB")
         return final_coord_dict
 
 
@@ -143,11 +121,9 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
 def get_coordinates(traj_and_report, indices_dict, resname, steps):
     trajfile, report = traj_and_report
     indices = np.concatenate([i[0] for i in indices_dict.values()])
-    print(indices)
     temp = np.argsort(indices)
     order_indices = np.empty_like(temp)
     order_indices[temp] = np.arange(len(indices))
-    print(order_indices)
     accepted_steps = hl.accepted_pele_steps(report)
 
     coords = hl.get_coordinates_from_trajectory(resname, trajfile, indices_to_retrieve=indices)

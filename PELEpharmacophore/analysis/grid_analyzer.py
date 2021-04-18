@@ -62,13 +62,6 @@ class GridAnalyzer(sa.SimulationAnalyzer):
             Grid object that contains the given atoms in the correspondent voxels.
         """
         dist = distance.cdist(coords, voxel_centers, 'sqeuclidean')
-        
-        
-        import tracemalloc
-        tracemalloc.start()
-        first_size, first_peak = tracemalloc.get_traced_memory()
-	
-        print(f"Check voxels memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
         voxel_inds = dist.argmin(axis=1) #get index of closest voxel to each atom
         return voxel_inds
 
@@ -87,24 +80,23 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         ncpus : int
             Number of processors.
         """
-        import tracemalloc
-
-        tracemalloc.start()
             
         coord_dict = self.get_coords(ncpus, steps)
                  
-        print("Starting grid_analysis")
         voxel_centers = np.array([v.center for v in self.grid.voxels])
 
         grid_atoms_dict = {feature: self.get_grid_atoms(coords) \
                            for feature, coords in coord_dict.items()}
-        first_size, first_peak = tracemalloc.get_traced_memory()
+        
 
-        print(f"Grid memory usage is {first_size / 10**6}MB; Peak was {first_peak / 10**6}MB")
-        print("Grid_atoms")
-        voxel_ind_dict  = {feature: self.check_voxels(coords, voxel_centers) \
-                           for feature, coords in grid_atoms_dict.items()}
-        print("voxel_inds")
+        split_grid_atoms = {feature: np.array_split(coords, ncpus) \
+                            for feature, coords in grid_atoms_dict.items()}
+
+        split_voxel_ind_dict  = {feature: hl.parallelize(check_voxels, coords, ncpus, voxel_centers=voxel_centers) \
+                           for feature, coords in split_grid_atoms.items()}
+
+        voxel_ind_dict = {feature: np.concatenate(indlst) \
+                         for feature, indlst in split_voxel_ind_dict.items()}
 
         for feature, inds in voxel_ind_dict.items():
             self.fill_grid(feature, inds)
@@ -155,6 +147,29 @@ class GridAnalyzer(sa.SimulationAnalyzer):
                     if freq >= self.threshold_dict[feature]:
                         with open(path, 'a') as f:
                             f.write(hl.format_line_pdb(voxel.center, feature, freq))
+
+
+def check_voxels(coords, voxel_centers):
+    """
+    Check which atoms are inside which voxel of the grid.
+
+    Parameters
+    ----------
+    grid_atoms : list of Atom objects
+        Atoms inside the grid.
+
+    Returns
+    ----------
+    model_grid : Grid object
+    Grid object that contains the given atoms in the correspondent voxels.
+    """
+    unique_coords, indices = np.unique(coords, axis=0, return_inverse=True)
+    dist = distance.cdist(unique_coords, voxel_centers, 'sqeuclidean')
+    voxel_inds = dist.argmin(axis=1) #get index of closest voxel to each atom
+    voxel_inds = voxel_inds[indices]
+    return voxel_inds
+
+
 
 if __name__ == "__main__":
     #features =  {'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': [('CA1', 'CA4'), ('CD1', 'CD4'), ('CC4', 'CC5', 'CC2')]}

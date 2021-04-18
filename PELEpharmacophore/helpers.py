@@ -238,7 +238,7 @@ def parallelize(func, iterable, n_workers, **kwargs):
         with Pool(n_workers) as p:
             results = p.map(f, iterable)
     else:
-        results = map(f, iterable)
+        results = list(map(f, iterable))
     return results
 
 
