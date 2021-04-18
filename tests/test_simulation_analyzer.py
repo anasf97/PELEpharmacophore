@@ -99,7 +99,7 @@ EXPECTED_VOXELS_INDS = [1070, 1267, 1070, 1267]
 def test_check_voxels(create_analyzer, coords=COORDS, expected_voxel_indices=EXPECTED_VOXELS_INDS):
     grid_a = create_analyzer(ga.GridAnalyzer)
     voxel_centers = np.array([v.center for v in grid_a.grid.voxels])
-    voxel_indices = grid_a.check_voxels(coords, voxel_centers)
+    voxel_indices = ga.check_voxels(coords, voxel_centers)
     assert_array_equal(voxel_indices, expected_voxel_indices)
 
 INPUT_INDICES = [1070, 1267, 1070, 1267, 1267]
