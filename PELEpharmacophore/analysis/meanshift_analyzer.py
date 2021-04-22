@@ -54,6 +54,11 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
             freqlist = [c.frequency for c in clusters]
             hist, bin_edges = np.histogram(freqlist)
             self.threshold_dict[feature] = bin_edges[threshold]
+
+        for feature, clusters in self.cluster_dict.items():
+            for i, cluster in enumerate(voxels):
+                if cluster.frequency < self.threshold_dict[feature]:
+                    clusters.pop(i)
         return self.threshold_dict
 
     def save_pharmacophores(self, outdir="Pharmacophores_ms"):
