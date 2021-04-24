@@ -16,6 +16,7 @@ def get_indices(topology, resname, atoms):
     query = f"resname {resname} and name {atoms}"
     return topology.select(query)
 
+
 def get_coordinates_from_trajectory(residue_name, trajectory, remove_hydrogen=False,
                                      only_first_model=False,
                                      indices_to_retrieve=None):
@@ -147,6 +148,7 @@ def get_coordinates_from_trajectory(residue_name, trajectory, remove_hydrogen=Fa
 
     return coordinates
 
+
 def load_trajectory(file, indices=None):
     return md.load(file, atom_indices=indices)
 
@@ -159,11 +161,12 @@ def neighbor_search(coords, center, dist):
     atoms_near = coords[ind]
     return atoms_near
 
-def format_line_pdb(coords, atomname, bfact, models = None, atomnum = "1", resname="UNK", chain="A", resnum="1", occ=1.00):
+
+def format_line_pdb(coords, atomname, bfact=1, models = None, atomnum = "1", resname="UNK", chain="A", resnum="1", occ=1.00):
     x, y, z = coords
-    atomstr = "ATOM"
+    atomstr = "HETATM"
     element = atomname[0]
-    line = f"{atomstr:5}{atomnum:>5} {atomname:4} {resname:3} {chain}{resnum:>4}    {x:>8.3f}{y:>8.3f}{z:>8.3f}{occ:6.2f}{bfact:7.2f}{element:>12}{models}\n"
+    line = f"{atomstr:5}{atomnum:>5}{atomname:>4}{resname:>5}{chain:>2}{resnum:>4}    {x:>8.3f}{y:>8.3f}{z:>8.3f}{occ:6.2f}{bfact:6.2f}{element:>12}\n"
     return line
 
 
@@ -217,8 +220,8 @@ def gen_array_dicts(*dicts):
 
     return gen_dict
 
-def custom_path(dir, custom_var, string, ext):
-    return os.path.join(dir, f"{custom_var}{string}{ext}")
+def custom_path(dir, filename, ext):
+    return os.path.join(dir, f"{filename}.{ext}")
 
 
 def accepted_pele_steps(report):
@@ -242,6 +245,16 @@ def parallelize(func, iterable, n_workers, **kwargs):
     return results
 
 
-
 def centroid(coords):
     return coords.sum(axis = 1) / coords.shape[1]
+
+
+def pdbconvert(file, in_format="pdb", out_format="mae", outdir="."):
+    input_path = os.path.abspath(file)
+    if not os.path.isdir(outdir):
+        os.mkdir(outdir)
+    convert_output = os.path.basename(file.replace(f".{in_format}", f".{out_format}"))
+    convert_output = os.path.join(outdir, convert_output)
+    schrodinger_path ="$SCHRODINGER/utilities/pdbconvert"
+    command = f"{schrodinger_path} -i{in_format} {input_path} -o{out_format} {convert_output}"
+    os.system(command)

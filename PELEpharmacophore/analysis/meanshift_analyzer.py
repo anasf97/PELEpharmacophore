@@ -4,6 +4,7 @@ from itertools import chain
 from sklearn.cluster import MeanShift
 import PELEpharmacophore.helpers as hl
 import PELEpharmacophore.analysis.simulation_analyzer as sa
+import PELEpharmacophore.output.pharmacophore_writer as pw
 
 class MeanshiftAnalyzer(sa.SimulationAnalyzer):
     """
@@ -54,6 +55,11 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
             freqlist = [c.frequency for c in clusters]
             hist, bin_edges = np.histogram(freqlist)
             self.threshold_dict[feature] = bin_edges[threshold]
+
+        for feature, clusters in self.cluster_dict.items():
+            for i, cluster in enumerate(clusters):
+                if cluster.frequency < self.threshold_dict[feature]:
+                    clusters.pop(i)
         return self.threshold_dict
 
     def save_pharmacophores(self, outdir="Pharmacophores_ms"):
@@ -77,6 +83,9 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
                 for cluster in clusters:
                     if cluster.frequency >= self.threshold_dict[feature]:
                         f.write(hl.format_line_pdb(cluster.center, feature, cluster.frequency))
+
+        name = self.simulations[0].indir
+        pw.PharmacophoreWriter(name, self.voxel_dict, self.coords, outdir)
 
 
 class Cluster(object):

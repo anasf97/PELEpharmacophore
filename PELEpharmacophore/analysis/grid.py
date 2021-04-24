@@ -52,8 +52,9 @@ class Grid:
 
 class Voxel:
 
-    def __init__(self, v):
+    def __init__(self, v, frequency=None):
         self.center = v
+        self.frequency = frequency
         self.freq_dict = None
         self.origin_dict = None
 
