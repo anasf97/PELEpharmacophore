@@ -172,6 +172,7 @@ class Simulation():
         else:
             self.features = features
 
+        self.indir = indir
         self.output = f"{indir}/output/"
         self.topfile = os.path.join(self.output, "topologies", "topology_0.pdb")
         self.trajectories = glob.glob(os.path.join(self.output, "0",  "trajectory_*.pdb"))

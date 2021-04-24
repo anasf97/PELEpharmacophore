@@ -5,6 +5,7 @@ from scipy.spatial import distance
 import PELEpharmacophore.helpers as hl
 import PELEpharmacophore.analysis.grid as gr
 import PELEpharmacophore.analysis.simulation_analyzer as sa
+import PELEpharmacophore.output.pharmacophore_writer as pw
 
 class GridAnalyzer(sa.SimulationAnalyzer):
     """
@@ -83,6 +84,12 @@ class GridAnalyzer(sa.SimulationAnalyzer):
 
         coord_dict = self.get_coords(ncpus, steps)
 
+        coordlst = [coords for feature, coords in coord_dict.items()]
+
+        print(coordlst)
+
+        self.coords = np.vstack(coordlst)
+
         voxel_centers = np.array([v.center for v in self.grid.voxels])
 
         grid_atoms_dict = {feature: self.get_grid_atoms(coords) \
@@ -100,6 +107,14 @@ class GridAnalyzer(sa.SimulationAnalyzer):
 
         for feature, inds in voxel_ind_dict.items():
             self.fill_grid(feature, inds)
+
+        self.voxel_dict = {}
+
+        for voxel in self.grid.voxels:
+            if voxel.freq_dict:
+                for feature, freq in voxel.freq_dict.items():
+                    self.voxel_dict = hl.list_dict(self.voxel_dict, feature, gr.Voxel(voxel.center, freq))
+                    print(feature, self.voxel_dict[feature])
 
 
 
@@ -123,17 +138,17 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         for element, freqlist in freq_dict_all.items():
             hist, bin_edges = np.histogram(freqlist)
             self.threshold_dict[element] = bin_edges[threshold]
+
+        for feature, voxels in self.voxel_dict.items():
+            for i, voxel in enumerate(voxels):
+                if voxel.frequency < self.threshold_dict[feature]:
+                    voxels.pop(i)
+        print(self.voxel_dict)
+
         return self.threshold_dict
 
-    def save_pharmacophores(self, outdir="Pharmacophores"):
-        """
-        Save pharmacophore files in PDB format.
 
-        Parameters
-        ----------
-        outdir : str
-            Directory with the results.
-        """
+    def write_pdb_pharmacophores(self, outdir):
         if not os.path.isdir(outdir):
             os.mkdir(outdir)
         for feature in self.threshold_dict:
@@ -147,6 +162,23 @@ class GridAnalyzer(sa.SimulationAnalyzer):
                     if freq >= self.threshold_dict[feature]:
                         with open(path, 'a') as f:
                             f.write(hl.format_line_pdb(voxel.center, feature, freq))
+
+
+    def save_pharmacophores(self, outdir="Pharmacophores"):
+        """
+        Save pharmacophore files in PDB format.
+
+        Parameters
+        ----------
+        outdir : str
+            Directory with the results.
+        """
+        self.write_pdb_pharmacophores(outdir)
+
+        name = self.simulations[0].indir
+        print(name)
+        pw.PharmacophoreWriter(name, self.voxel_dict, self.coords, outdir)
+
 
 
 def check_voxels(coords, voxel_centers):
@@ -178,4 +210,5 @@ if __name__ == "__main__":
     target.set_ligand("L", "FRA", 900)
     target.set_grid((2.173, 15.561, 28.257), 7)
     target.run(1)
-    target.set_frequency_filter(0)
+    target.set_frequency_filter(1)
+    target.save_pharmacophores()
