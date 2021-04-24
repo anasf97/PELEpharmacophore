@@ -5,6 +5,7 @@ from scipy.spatial import distance
 import PELEpharmacophore.helpers as hl
 import PELEpharmacophore.analysis.grid as gr
 import PELEpharmacophore.analysis.simulation_analyzer as sa
+import PELEpharmacophore.output.pharmacophore_writer as pw
 
 class GridAnalyzer(sa.SimulationAnalyzer):
     """
@@ -85,7 +86,9 @@ class GridAnalyzer(sa.SimulationAnalyzer):
 
         coordlst = [coords for feature, coords in coord_dict.items()]
 
-        self.coords = np.vstack(*coordlst)
+        print(coordlst)
+
+        self.coords = np.vstack(coordlst)
 
         voxel_centers = np.array([v.center for v in self.grid.voxels])
 
@@ -144,15 +147,8 @@ class GridAnalyzer(sa.SimulationAnalyzer):
 
         return self.threshold_dict
 
-    def save_pharmacophores(self, outdir="Pharmacophores"):
-        """
-        Save pharmacophore files in PDB format.
 
-        Parameters
-        ----------
-        outdir : str
-            Directory with the results.
-        """
+    def write_pdb_pharmacophores(self, outdir):
         if not os.path.isdir(outdir):
             os.mkdir(outdir)
         for feature in self.threshold_dict:
@@ -167,7 +163,21 @@ class GridAnalyzer(sa.SimulationAnalyzer):
                         with open(path, 'a') as f:
                             f.write(hl.format_line_pdb(voxel.center, feature, freq))
 
-        PharmacophoreWriter(name, self.voxel_dict, self.coords )
+
+    def save_pharmacophores(self, outdir="Pharmacophores"):
+        """
+        Save pharmacophore files in PDB format.
+
+        Parameters
+        ----------
+        outdir : str
+            Directory with the results.
+        """
+        self.write_pdb_pharmacophores(outdir)
+
+        name = self.simulations[0].indir
+        print(name)
+        pw.PharmacophoreWriter(name, self.voxel_dict, self.coords, outdir)
 
 
 
@@ -201,3 +211,4 @@ if __name__ == "__main__":
     target.set_grid((2.173, 15.561, 28.257), 7)
     target.run(1)
     target.set_frequency_filter(1)
+    target.save_pharmacophores()

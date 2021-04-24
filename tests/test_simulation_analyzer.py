@@ -133,7 +133,7 @@ def test_save_pharmacophores_grid(run_analyzer, compare_files, expected_pharmaco
     sa.set_frequency_filter(0)
 
     outdir = os.path.join(DIR, "result")
-    sa.save_pharmacophores(outdir)
+    sa.write_pdb_pharmacophores(outdir)
 
     result = [os.path.join(outdir, f) for f in os.listdir(outdir)]
     expected = [os.path.join(expected_pharmacophores_path, f) for f in os.listdir(expected_pharmacophores_path)]
