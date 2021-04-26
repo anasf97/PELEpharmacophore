@@ -175,7 +175,7 @@ fragment_features = {
 
                      "frag87":  {'HBD':['H8'], 'HBA':['O1'],  'ALI': ['C1', 'C3']},
 
-                     "frag88":  {'HBD':['H10'], 'HBA':['O1'],  'ALI': ['C1', 'C4']},
+                     "frag88":  {'HBD':['H10'], 'HBA':['O1'] },
 
                      "frag89":  {'HBA':['O1'],  'ALI': [('C2', 'C3')]},
 
@@ -191,7 +191,7 @@ fragment_features = {
 
                      "frag95":  {'HBA':['O1'],  'ALI': ['C1', 'C4']},
 
-                     "frag96":  {'POS':['N1'],  'ALI': ['C1']},
+                     "frag96":  {'POS':['N1'] },
 
                      "frag97":  {'POS':['N1'],  'ALI': ['C1', 'C3', 'C4']},
 
