@@ -85,7 +85,7 @@ class MeanshiftAnalyzer(sa.SimulationAnalyzer):
                         f.write(hl.format_line_pdb(cluster.center, feature, cluster.frequency))
 
         name = self.simulations[0].indir
-        pw.PharmacophoreWriter(name, self.voxel_dict, self.coords, outdir)
+        #pw.PharmacophoreWriter(name, self.voxel_dict, self.coords, outdir)
 
 
 class Cluster(object):

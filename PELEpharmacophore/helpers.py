@@ -159,7 +159,7 @@ def neighbor_search(coords, center, dist):
     result = tree.query_radius(center, r=dist)
     ind = result[0]
     atoms_near = coords[ind]
-    return atoms_near
+    return atoms_near, ind
 
 
 def format_line_pdb(coords, atomname, bfact=1, models = None, atomnum = "1", resname="UNK", chain="A", resnum="1", occ=1.00):

@@ -42,7 +42,7 @@ class GridAnalyzer(sa.SimulationAnalyzer):
             Atoms inside the grid.
         """
         dist = np.sqrt(3)*self.grid.radius #get dist from center to vertex
-        atoms_near = hl.neighbor_search(coords, self.grid.center, dist)
+        atoms_near, ind = hl.neighbor_search(coords, self.grid.center, dist)
         inside_grid_mask = np.logical_and(self.grid.v1 <= atoms_near, atoms_near <=  self.grid.v8).all(axis=1)
         grid_atoms = atoms_near[inside_grid_mask]
         return grid_atoms
@@ -177,7 +177,7 @@ class GridAnalyzer(sa.SimulationAnalyzer):
 
         name = self.simulations[0].indir
         print(name)
-        pw.PharmacophoreWriter(name, self.voxel_dict, self.coords, outdir)
+        #pw.PharmacophoreWriter(name, self.voxel_dict, self.coords, outdir)
 
 
 

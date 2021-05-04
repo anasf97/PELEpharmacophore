@@ -3,6 +3,7 @@ import abc
 import re
 import glob
 import numpy as np
+import mdtraj as md
 from collections import OrderedDict
 from itertools import accumulate, chain
 import PELEpharmacophore.helpers as hl
@@ -88,10 +89,21 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
 
         return (res_indices , lengths)
 
+    def get_target_indices(self):
+        simulation = self.simulations[0]
+        trajectory = md.load(simulation.topfile)
+        topology = trajectory.topology
+        polar_indices = topology.select("protein and symbol N O")
+        polar_coords = md.load(simulation.topfile, atom_indices=polar_indices)
+	atoms_near, inds = hl.neighbor_search(polar_coords, self.center, 20)
+        polar_indices = polar_indices[inds]
+	return polar_indices
 
     def get_coords(self, ncpus, steps=None):
 
         final_coord_dict={}
+
+	polar_indices = self.get_target_indices()
 
         for simulation in self.simulations:
 
@@ -103,7 +115,7 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
 
             indices_dict = OrderedDict([(feature, self.get_indices(topology, self.resname, atomlist, first_index)) for feature, atomlist in simulation.features.items()])
 
-            coord_dicts = hl.parallelize(get_coordinates, simulation.traj_and_reports, ncpus, indices_dict=indices_dict, resname=self.resname, steps=steps)
+            coord_dicts = hl.parallelize(get_coordinates, simulation.traj_and_reports, ncpus, indices_dict=indices_dict, resname=self.resname, steps=steps, polar_indices=polar_indices)
 
             sim_coord_dict = hl.merge_array_dicts(*coord_dicts)
 
@@ -118,7 +130,7 @@ class SimulationAnalyzer(metaclass=abc.ABCMeta):
         pass
 
 
-def get_coordinates(traj_and_report, indices_dict, resname, steps=None):
+def get_coordinates(traj_and_report, indices_dict, resname, steps=None, polar_indices=None):
     trajfile, report = traj_and_report
     indices = np.concatenate([i[0] for i in indices_dict.values()])
     temp = np.argsort(indices)
@@ -136,7 +148,7 @@ def get_coordinates(traj_and_report, indices_dict, resname, steps=None):
     start = 0
     for feature, (indices, lengths) in indices_dict.items():
         stop = start + len(indices)
-        feature_coords = coords[:, start:stop, :]
+	feature_coords = coords[:, start:stop, :]
         start = stop
         feature_coords = calc_cycle_centroids(feature_coords, lengths)
         coord_dict[feature] = feature_coords.reshape(-1, 3)
@@ -165,7 +177,7 @@ class Simulation():
 
     def __init__(self, indir, features=None):
         if features is None:
-            frag_regex = r".*(?P<frag>frag\d+$)"
+            frag_regex = r".*(?P<frag>frag\d+).*$"
             frag = re.match(frag_regex, indir)['frag']
             self.features = ff.fragment_features[frag]
 
