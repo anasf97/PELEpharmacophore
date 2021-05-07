@@ -94,33 +94,33 @@ def get_coordinates_from_trajectory(residue_name, trajectory, remove_hydrogen=Fa
                 continue
             if line_type == "ATOM  " or line_type == "HETATM":
                 current_residue_name = line[17:20]
-                if current_residue_name == residue_name:
-                    # Add one to current index (it initially equals -1)
-                    current_index += 1
-                    # In case we are interested in specific residue
-                    # indices, retrieve only those
-                    if (indices_to_retrieve is not None and
-                            current_index not in indices_to_retrieve):
+                #if current_residue_name == residue_name:
+                # Add one to current index (it initially equals -1)
+                current_index += 1
+                # In case we are interested in specific residue
+                # indices, retrieve only those
+                if (indices_to_retrieve is not None and
+                        current_index not in indices_to_retrieve):
+                    continue
+                # In case we have information about the element
+                # and we want to skip hydrogen atoms, do so
+                if remove_hydrogen and len(line) >= 78:
+                    element = line[76:78]
+                    element = element.strip()
+                    element = element.strip(' ')
+                    if element == 'H':
                         continue
-                    # In case we have information about the element
-                    # and we want to skip hydrogen atoms, do so
-                    if remove_hydrogen and len(line) >= 78:
-                        element = line[76:78]
-                        element = element.strip()
-                        element = element.strip(' ')
-                        if element == 'H':
-                            continue
-                    try:
-                        x = float(line[30:38])
-                        y = float(line[38:46])
-                        z = float(line[46:54])
-                    except ValueError:
-                        print('Warning: invalid PDB format found in ' +
-                              'line {}'.format(i) +
-                              'of trajectory {}. '.format(trajectory) +
-                              'Its coordinates will be skipped.')
-                    point = np.array((x, y, z))
-                    model_coords.append(point)
+                try:
+                    x = float(line[30:38])
+                    y = float(line[38:46])
+                    z = float(line[46:54])
+                except ValueError:
+                    print('Warning: invalid PDB format found in ' +
+                          'line {}'.format(i) +
+                          'of trajectory {}. '.format(trajectory) +
+                          'Its coordinates will be skipped.')
+                point = np.array((x, y, z))
+                model_coords.append(point)
     # In case MODEL section was missing
     if not inside_model and len(model_coords) > 0:
         coordinates.append(np.array(model_coords))
@@ -145,7 +145,7 @@ def get_coordinates_from_trajectory(residue_name, trajectory, remove_hydrogen=Fa
               'Its coordinates will be skipped.')
         # Return empty array
         return np.array(())
-
+    print(f"coordinates\n{coordinates}")
     return coordinates
 
 

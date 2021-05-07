@@ -25,6 +25,7 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         """
         self.grid = gr.Grid(center, radius)
         self.grid.generate_voxels()
+        self.center = center
 
 
     def get_grid_atoms(self, coords):
@@ -85,8 +86,6 @@ class GridAnalyzer(sa.SimulationAnalyzer):
         coord_dict = self.get_coords(ncpus, steps)
 
         coordlst = [coords for feature, coords in coord_dict.items()]
-
-        print(coordlst)
 
         self.coords = np.vstack(coordlst)
 
@@ -205,10 +204,10 @@ def check_voxels(coords, voxel_centers):
 
 if __name__ == "__main__":
     #features =  {'HBD': ['NC1'], 'HBA': ['NB1', 'NC3', 'O2'], 'ALI': ['FD3', 'C1'], 'ARO': [('CA1', 'CA4'), ('CD1', 'CD4'), ('CC4', 'CC5', 'CC2')]}
-    features =  {'ALI': ['C1']}
+    features =  {'ALI': ['C1'], 'ARO': [('O1', 'C2'), 'O2']}
     target = GridAnalyzer("/home/ana/GitRepositories/PELEpharmacophore/tests/data/simulations", features)
     target.set_ligand("L", "FRA", 900)
     target.set_grid((2.173, 15.561, 28.257), 7)
     target.run(1)
     target.set_frequency_filter(1)
-    target.save_pharmacophores()
+    #target.save_pharmacophores()
